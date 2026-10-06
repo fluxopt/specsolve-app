@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# A local copy of the published archives, for development; see the README.
+public/archive/

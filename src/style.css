@@ -1,0 +1,122 @@
+:root {
+  color-scheme: light;
+  --page: #f4f4f2;
+  --surface: #fcfcfb;
+  --ink: #1d1d1b;
+  --muted: #6b6b66;
+  --faint: #c9c9c4;
+  --rule: #e2e2de;
+  --accent: #2a78d6;
+  --hue-blue: #2a78d6;
+  --hue-orange: #eb6834;
+  --hue-aqua: #1baf7a;
+  --hue-yellow: #eda100;
+  --ts-chart-tooltip-background: var(--surface);
+  --ts-chart-tooltip-color: var(--ink);
+  --ts-chart-tooltip-border: 1px solid var(--rule);
+  --ts-chart-focus-fill: var(--surface);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #111110;
+    --surface: #1a1a19;
+    --ink: #ededea;
+    --muted: #a3a39e;
+    --faint: #3d3d3a;
+    --rule: #2c2c2a;
+    --accent: #3987e5;
+    --hue-blue: #3987e5;
+    --hue-orange: #d95926;
+    --hue-aqua: #199e70;
+    --hue-yellow: #c98500;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+a { color: var(--accent); }
+code { font-size: 0.9em; }
+h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 0.5rem; letter-spacing: -0.01em; }
+h2 { font-size: 1rem; margin: 0 0 0.25rem; }
+.muted { color: var(--muted); }
+p.muted { margin: 0 0 0.75rem; font-size: 0.9rem; }
+
+nav.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: baseline;
+  padding: 0.75rem 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 16px 3rem; }
+footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 2rem; font-size: 0.85rem; }
+.intro p { max-width: 70ch; color: var(--muted); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  /* A chart inside a grid track must be able to shrink below its first-render width. */
+  min-width: 0;
+}
+
+.grid { display: grid; gap: 1rem; }
+.grid > .card { margin-bottom: 0; }
+.grid + .grid, .grid + .card { margin-top: 1rem; }
+.grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1rem; }
+.grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) { .grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .grid.two { grid-template-columns: minmax(0, 1fr); } }
+
+.tile-label, .tile-note { font-size: 0.85rem; color: var(--muted); }
+.tile-value { font-size: 1.9rem; font-weight: 600; line-height: 1.2; margin: 0.15rem 0; font-variant-numeric: tabular-nums; }
+
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  align-items: center;
+  margin: 1rem -16px;
+  padding: 0.75rem 16px;
+  background: color-mix(in srgb, var(--page) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+}
+/* On a phone the two sliders stack and would pin a third of the screen, so there they scroll with the page. */
+@media (max-width: 640px) { .controls { position: static; } }
+
+.slider { display: grid; grid-template-columns: auto minmax(120px, 260px) 5.5rem; gap: 0.75rem; align-items: center; font-size: 0.9rem; }
+.slider input { accent-color: var(--accent); width: 100%; }
+.slider output { font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .slider { grid-template-columns: 1fr; gap: 0.25rem; width: 100%; } }
+.picked { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+.heatmap { cursor: pointer; }
+
+details > summary { cursor: pointer; font-weight: 600; }
+.table-wrap { overflow-x: auto; margin-top: 0.75rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 0.3rem 0.6rem; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--page); }
+tr.here { font-weight: 600; color: var(--accent); }
+
+.error { color: #c43c3c; }
