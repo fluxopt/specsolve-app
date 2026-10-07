@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { areaY, cell, colorGradientLegend, colorLegend, d3Curve, defineChart, dot, lineY, ruleX, ruleY, text } from '@tanstack/charts'
 import { crosshair } from '@tanstack/charts/crosshair'
 import type { ChartCursorController } from '@tanstack/charts/cursor'
@@ -19,6 +19,21 @@ import { SEQUENTIAL, technologyColors } from './palette'
 
 /** A period or scenario change glides the stack from the old fleet to the new one. */
 const svgAnimation = { duration: 450, easing: 'ease-in-out' as const }
+
+/**
+ * The animation for a redraw: the glide when *data* is not what was last drawn, none when only a hover marker moved.
+ *
+ * A chart that draws the shared hover redraws on every pointer move, and a
+ * glide there trails the pointer. The last drawn data is recorded after the
+ * commit, so a render that runs twice reads the same answer both times.
+ */
+function useDataAnimation(data: unknown) {
+  const drawn = useRef(data)
+  useEffect(() => {
+    drawn.current = data
+  }, [data])
+  return data === drawn.current ? false : svgAnimation
+}
 
 /** The hour axis: every typical day end to end, ticked every six hours, with the day's name over its middle. */
 function hourAxis(days: string[]) {
@@ -135,6 +150,7 @@ export function DurationChart({
     () => [...price].sort((a, b) => b.value - a.value || a.slot - b.slot).map((d, rank) => ({ ...d, rank })),
     [price],
   )
+  const animation = useDataAnimation(ranked)
   const definition = useMemo(() => {
     const at = ranked.filter((d) => d.slot === hovered)
     return defineChart({
@@ -156,9 +172,9 @@ export function DurationChart({
           rows: [{ label: `rank ${p.datum.rank + 1}`, value: `${plain(p.datum.value)} /MWh` }],
         }),
       },
-      svgAnimation,
+      svgAnimation: animation,
     })
-  }, [ranked, hovered])
+  }, [ranked, hovered, animation])
   return (
     <Chart
       definition={definition}
@@ -186,6 +202,7 @@ export function PriceSurface({
   onHover: (slot: number | null) => void
   onPick: (year: number) => void
 }) {
+  const animation = useDataAnimation(useMemo(() => [price, year], [price, year]))
   const definition = useMemo(() => {
     const slots = days.flatMap((_, i) => Array.from({ length: 24 }, (_, h) => i * 24 + h))
     const top = Math.max(1, ...price.map((d) => d.value))
@@ -224,9 +241,9 @@ export function PriceSurface({
           rows: [{ label: 'price', value: `${plain(p.datum.value)} /MWh` }],
         }),
       },
-      svgAnimation,
+      svgAnimation: animation,
     })
-  }, [price, days, years, year, hovered])
+  }, [price, days, years, year, hovered, animation])
   return (
     <Chart
       definition={definition}
