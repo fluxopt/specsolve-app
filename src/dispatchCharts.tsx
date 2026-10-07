@@ -1,18 +1,21 @@
 import { useMemo } from 'react'
-import { areaY, colorLegend, d3Curve, defineChart, dot, lineY, ruleX, ruleY, text } from '@tanstack/charts'
+import { areaY, cell, colorGradientLegend, colorLegend, d3Curve, defineChart, dot, lineY, ruleX, ruleY, text } from '@tanstack/charts'
 import { crosshair } from '@tanstack/charts/crosshair'
 import type { ChartCursorController } from '@tanstack/charts/cursor'
 import { cursorHost } from '@tanstack/charts/cursor'
 import { decorative } from '@tanstack/charts/mark/decorative'
 import { Chart } from '@tanstack/charts/react'
+import { scaleBand } from '@tanstack/charts/scales/band'
 import { scaleLinear } from '@tanstack/charts/scales/linear'
 import { scaleOrdinal } from '@tanstack/charts/scales/ordinal'
 import { tooltip } from '@tanstack/charts/tooltip'
+import { interpolateRgbBasis } from 'd3-interpolate'
+import { scaleSequentialSqrt } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
 import type { Hourly, Output } from './dispatch'
 import { compact, plain } from './format'
-import { technologyColors } from './palette'
+import { SEQUENTIAL, technologyColors } from './palette'
 
 /** A period or scenario change glides the stack from the old fleet to the new one. */
 const svgAnimation = { duration: 450, easing: 'ease-in-out' as const }
@@ -162,6 +165,76 @@ export function DurationChart({
       height={260}
       ariaLabel="Price duration curve: the hours sorted from dearest to cheapest"
       onFocusChange={(p) => onHover(p ? p.datum.slot : null)}
+    />
+  )
+}
+
+export function PriceSurface({
+  price,
+  days,
+  years,
+  year,
+  hovered,
+  onHover,
+  onPick,
+}: {
+  price: Hourly[]
+  days: string[]
+  years: number[]
+  year: number
+  hovered: number | null
+  onHover: (slot: number | null) => void
+  onPick: (year: number) => void
+}) {
+  const definition = useMemo(() => {
+    const slots = days.flatMap((_, i) => Array.from({ length: 24 }, (_, h) => i * 24 + h))
+    const top = Math.max(1, ...price.map((d) => d.value))
+    return defineChart({
+      marks: [
+        cell(
+          price.filter((d) => d.year !== year),
+          { x: 'slot', y: 'year', color: 'value', key: (d) => `${d.year}|${d.slot}`, inset: 0.5, fillOpacity: 0.4 },
+        ),
+        cell(
+          price.filter((d) => d.year === year),
+          { x: 'slot', y: 'year', color: 'value', key: (d) => `${d.year}|${d.slot}`, inset: 0.5 },
+        ),
+        decorative(
+          cell(
+            hovered === null ? [] : years.map((y) => ({ slot: hovered, year: y })),
+            { x: 'slot', y: 'year', key: (d) => `hovered|${d.year}`, fill: 'none', stroke: 'var(--ink)', strokeWidth: 1.5, inset: 0 },
+          ),
+        ),
+      ],
+      scales: {
+        x: {
+          scale: scaleBand<number>().domain(slots).padding(0),
+          axis: { ticks: { values: days.map((_, i) => i * 24 + 12), format: (v: number) => days[Math.floor(v / 24)] } },
+        },
+        y: { scale: scaleBand<number>().domain(years).padding(0.08), axis: { ticks: { format: String } } },
+      },
+      color: {
+        scale: scaleSequentialSqrt(interpolateRgbBasis(SEQUENTIAL)).domain([0, top]),
+        legend: colorGradientLegend({ label: 'price per MWh', format: compact }),
+      },
+      tooltip: {
+        use: tooltip,
+        content: ([p]) => ({
+          title: `${p.datum.year}, ${p.datum.day}, ${p.datum.hour}:00`,
+          rows: [{ label: 'price', value: `${plain(p.datum.value)} /MWh` }],
+        }),
+      },
+      svgAnimation,
+    })
+  }, [price, days, years, year, hovered])
+  return (
+    <Chart
+      definition={definition}
+      height={60 + 38 * years.length}
+      className="surface"
+      ariaLabel="Price in every hour of every period; select a row to show that period"
+      onFocusChange={(p) => onHover(p ? p.datum.slot : null)}
+      onSelect={(p) => p && onPick(p.datum.year)}
     />
   )
 }

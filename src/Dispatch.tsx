@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { createChartCursor } from '@tanstack/charts/cursor'
 
 import { type Dispatch as Data, loadDispatch } from './dispatch'
-import { DurationChart, OutputChart, PriceChart, type SlotCursor } from './dispatchCharts'
+import { DurationChart, OutputChart, PriceChart, PriceSurface, type SlotCursor } from './dispatchCharts'
 import { compact, percent, plain } from './format'
 import { Tile } from './Tile'
 
@@ -50,6 +50,7 @@ function Page({ data }: { data: Data }) {
   const output = useMemo(() => data.output.filter((d) => d.run === run && d.year === year), [data, run, year])
   const load = useMemo(() => data.load.filter((d) => d.run === run && d.year === year), [data, run, year])
   const price = useMemo(() => data.price.filter((d) => d.run === run && d.year === year), [data, run, year])
+  const surface = useMemo(() => data.price.filter((d) => d.run === run), [data, run])
 
   const clean = data.zeroCarbon.get(run) ?? new Set<string>()
   const energy = (rows: typeof output) => rows.reduce((s, d) => s + d.value * data.weight.get(d.day)!, 0)
@@ -63,8 +64,8 @@ function Page({ data }: { data: Data }) {
     if (yearIndex === data.years.length - 1) setYearIndex(0)
     setPlaying(true)
   }
-  // Redefining the duration chart re-reports its focus, so the same hour is not published twice.
-  const onDurationHover = (slot: number | null) => {
+  // Redefining a chart that publishes its own hover re-reports its focus, so the same hour is not published twice.
+  const publishHover = (slot: number | null) => {
     if (slot === (cursor.getState()?.value?.x ?? null)) return
     cursor.setState(slot === null ? null : { anchor: 'value', value: { x: slot }, source: 'programmatic', pinned: false })
   }
@@ -77,7 +78,7 @@ function Page({ data }: { data: Data }) {
           Each period is solved on {data.days.length} typical days of 24 hours. Here is what every technology produces in
           each of those hours, the demand it meets, and what one more MWh of demand would cost: the shadow price of the
           balance constraint, read straight out of the archive. Press play to watch the pathway unfold, or hover any hour
-          — all three charts follow.
+          — every chart follows.
         </p>
       </header>
 
@@ -123,7 +124,7 @@ function Page({ data }: { data: Data }) {
         <Tile
           label={hoveredPrice ? `${hoveredPrice.day}, ${hoveredPrice.hour}:00` : 'Hover an hour'}
           value={hoveredPrice ? `${plain(hoveredPrice.value)} /MWh` : '—'}
-          note={hoveredPrice ? 'the price in the hour every chart points at' : 'in any chart, to read one hour across all three'}
+          note={hoveredPrice ? 'the price in the hour every chart points at' : 'in any chart, to read one hour across all of them'}
         />
       </div>
 
@@ -144,8 +145,28 @@ function Page({ data }: { data: Data }) {
         <div className="card">
           <h2>The same hours, dearest first</h2>
           <p className="muted">A price-duration curve. Hover it to find the hour on the left.</p>
-          <DurationChart price={price} hovered={hovered} onHover={onDurationHover} />
+          <DurationChart price={price} hovered={hovered} onHover={publishHover} />
         </div>
+      </div>
+
+      <div className="card">
+        <h2>Price by hour and period — {run.replace('_', ' ')}</h2>
+        <p className="muted">
+          Every period at once: how the price structure moves as the fleet changes. The period shown above is drawn in
+          full; select another row to show it.
+        </p>
+        <PriceSurface
+          price={surface}
+          days={data.days}
+          years={data.years}
+          year={year}
+          hovered={hovered}
+          onHover={publishHover}
+          onPick={(y) => {
+            setPlaying(false)
+            setYearIndex(data.years.indexOf(y))
+          }}
+        />
       </div>
     </>
   )

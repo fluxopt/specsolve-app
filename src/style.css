@@ -108,7 +108,7 @@ footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 2rem; font-size: 0.8
 @media (max-width: 640px) { .slider { grid-template-columns: 1fr; gap: 0.25rem; width: 100%; } }
 .picked { margin: 0; font-size: 0.85rem; color: var(--muted); }
 
-.heatmap { cursor: pointer; }
+.heatmap, .surface { cursor: pointer; }
 
 details > summary { cursor: pointer; font-weight: 600; }
 .table-wrap { overflow-x: auto; margin-top: 0.75rem; }
@@ -141,3 +141,6 @@ nav.top .muted { margin-left: auto; font-size: 0.85rem; }
 }
 .grid.two.wide-first { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
 @media (max-width: 720px) { .grid.two.wide-first { grid-template-columns: minmax(0, 1fr); } }
+
+/* A chart takes keyboard focus; a mouse click on it should not leave the focus outline behind. */
+.ts-chart-host:focus:not(:focus-visible), .ts-chart-host :focus:not(:focus-visible) { outline: none; }
