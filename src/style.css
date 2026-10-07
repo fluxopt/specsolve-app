@@ -11,6 +11,7 @@
   --hue-orange: #eb6834;
   --hue-aqua: #1baf7a;
   --hue-yellow: #eda100;
+  --hue-red: #d03b3b;
   --ts-chart-tooltip-background: var(--surface);
   --ts-chart-tooltip-color: var(--ink);
   --ts-chart-tooltip-border: 1px solid var(--rule);
@@ -31,6 +32,7 @@
     --hue-orange: #d95926;
     --hue-aqua: #199e70;
     --hue-yellow: #c98500;
+    --hue-red: #e05555;
   }
 }
 
@@ -108,7 +110,7 @@ footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 2rem; font-size: 0.8
 @media (max-width: 640px) { .slider { grid-template-columns: 1fr; gap: 0.25rem; width: 100%; } }
 .picked { margin: 0; font-size: 0.85rem; color: var(--muted); }
 
-.heatmap, .surface { cursor: pointer; }
+.heatmap, .surface, .pickable { cursor: pointer; }
 
 details > summary { cursor: pointer; font-weight: 600; }
 .table-wrap { overflow-x: auto; margin-top: 0.75rem; }
@@ -187,3 +189,9 @@ table.entries th, table.entries td { text-align: left; white-space: normal; }
 .controls .segmented.paths button { text-transform: none; font-family: ui-monospace, monospace; }
 table.rows th, table.rows td { text-align: left; }
 table.rows th:last-child, table.rows td:last-child { text-align: right; }
+select.future {
+  font: inherit; font-size: 0.85rem; color: var(--ink); background: var(--page);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 0.15rem 0.4rem;
+}
+.slider input:disabled { opacity: 0.4; }
+.segmented.sentence button { text-transform: none; }

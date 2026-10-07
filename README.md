@@ -27,7 +27,7 @@ answer a glob: `archive/grid/answer/primal/total.parquet` is
 `read_parquet('grid/*/answer/primal/total.parquet')`. Every row names its
 archive in `specsolve_run`.
 
-Two pages, each reading a handful of stacked files with
+Four pages, each reading a handful of stacked files with
 [hyparquet](https://github.com/hyparam/hyparquet) and joining them in
 TypeScript:
 
@@ -41,6 +41,17 @@ TypeScript:
   morphing the stacked output from one fleet to the next, and one shared
   cursor ties the hour axis of the output and price charts to the
   price-duration curve beside them.
+- **Risk** ([`src/hedge.ts`](src/hedge.ts)) reads ten files of the hedge, about
+  30 KB: one investment period planned against 60 futures at once, at ten
+  weights on the worst tenth of them, beside the plan made for the average
+  future and the plans made with perfect foresight. It draws what each plan
+  builds, the trade between expected cost and the cost in the worst futures,
+  what every future costs, and the weight the plan puts on each, read off the
+  duals of the tail rows. Each plan's hours come from that plan's own archive,
+  about 70 KB, read when the plan is first shown, because the stacked file of
+  every plan's hours holds over a million rows. The tail is computed from each
+  future's cost rather than read off the model's `cvar`, which is arbitrary at
+  a weight of zero.
 - **Explore** ([`src/explore.ts`](src/explore.ts)) knows nothing about the
   model. It reads the stacked `catalog.parquet` of either directory, lists
   every quantity, and opens any of them in a
@@ -62,7 +73,8 @@ Against archives you solved yourself, from a checkout of the showcase beside thi
 ```bash
 cd ../specsolve-showcase
 uv run showcase-grid --runs grid
-uv run python -m tools.publish_archive ../specsolve-app/public/archive grid
+uv run showcase-hedge --runs hedge
+uv run python -m tools.publish_archive ../specsolve-app/public/archive grid hedge
 cd ../specsolve-app
 VITE_ARCHIVE=./archive npm run dev
 ```

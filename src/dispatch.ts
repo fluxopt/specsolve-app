@@ -1,12 +1,16 @@
 import { read } from './archive'
 
 /** One hour of one typical day, numbered across the days so a chart can run them end to end. */
-export interface Slot {
-  run: string
-  year: number
+export interface Hour {
   day: string
   hour: number
   slot: number
+}
+
+/** An hour of one period of one scenario. */
+export interface Slot extends Hour {
+  run: string
+  year: number
 }
 
 export interface Output extends Slot {

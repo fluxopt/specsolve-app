@@ -5,7 +5,7 @@
  * choice and a chart never re-renders to change theme. A technology this
  * model does not name takes the next free hue.
  */
-const KNOWN: Record<string, string> = { gas: 'blue', wind: 'aqua', solar: 'yellow' }
+const KNOWN: Record<string, string> = { gas: 'blue', wind: 'aqua', solar: 'yellow', unserved: 'red' }
 const ORDER = ['blue', 'orange', 'aqua', 'yellow']
 
 export function technologyColors(names: string[]): string[] {
