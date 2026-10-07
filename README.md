@@ -41,6 +41,12 @@ TypeScript:
   morphing the stacked output from one fleet to the next, and one shared
   cursor ties the hour axis of the output and price charts to the
   price-duration curve beside them.
+- **Explore** ([`src/explore.ts`](src/explore.ts)) knows nothing about the
+  model. It reads the stacked `catalog.parquet` of either directory, lists
+  every quantity, and opens any of them in a
+  [TanStack Table](https://github.com/TanStack/table) to filter, sort and
+  group, with the URL of the file it read and the one line that reads it
+  from DuckDB or polars.
 
 ## Run it
 

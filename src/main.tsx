@@ -2,11 +2,16 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { Dispatch } from './Dispatch'
+import { Explore } from './Explore'
 import './style.css'
 import { WhatIf } from './WhatIf'
 
 /** The pages, by the hash that selects them. Pages serves one file, so the route lives after the `#`. */
-const PAGES = { '': { title: 'What if', page: WhatIf }, dispatch: { title: 'Dispatch', page: Dispatch } }
+const PAGES = {
+  '': { title: 'What if', page: WhatIf },
+  dispatch: { title: 'Dispatch', page: Dispatch },
+  explore: { title: 'Explore', page: Explore },
+}
 type Route = keyof typeof PAGES
 
 const route = (): Route => {
@@ -46,7 +51,8 @@ function App() {
         <Page />
       </main>
       <footer className="muted">
-        Built with React and <a href="https://github.com/TanStack/charts">TanStack Charts</a>. The data is parquet read
+        Built with React, <a href="https://github.com/TanStack/charts">TanStack Charts</a> and{' '}
+        <a href="https://github.com/TanStack/table">TanStack Table</a>. The data is parquet read
         over HTTP from the archives the showcase's solve job writes;{' '}
         <a href="https://github.com/fluxopt/specsolve-app">the source</a>.
       </footer>
