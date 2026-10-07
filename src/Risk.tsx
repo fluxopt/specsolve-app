@@ -219,7 +219,7 @@ function Page({ hedge }: { hedge: Hedge }) {
         <h2>What makes a future dear</h2>
         <p className="muted">
           Each future's operating cost under this plan against the gas price it drew, coloured by how hard the wind blew
-          in winter; dark is a lull. The futures in the tail are ringed. The dashed fit's slope is the plan's exposure to
+          in winter; the lulls are the dots that stand out most. The futures in the tail are ringed. The dashed fit's slope is the plan's exposure to
           gas, and it flattens as the weight on the tail buys wind and solar. Select a future to show its hours.
         </p>
         <Visible height={340}>
