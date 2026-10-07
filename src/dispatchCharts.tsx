@@ -13,7 +13,7 @@ import { interpolateRgbBasis } from 'd3-interpolate'
 import { scaleSequentialSqrt } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
-import type { Hourly, Output } from './dispatch'
+import type { Hour, Hourly } from './dispatch'
 import { compact, plain } from './format'
 import { SEQUENTIAL, technologyColors } from './palette'
 
@@ -66,8 +66,8 @@ export function OutputChart({
   technologies,
   cursor,
 }: {
-  output: Output[]
-  load: Hourly[]
+  output: (Hour & { generator: string; value: number })[]
+  load: (Hour & { value: number })[]
   days: string[]
   technologies: string[]
   cursor: SlotCursor
@@ -106,7 +106,7 @@ export function OutputChart({
   return <Chart definition={definition} height={340} ariaLabel="Output by technology in every hour of the typical days, MW" />
 }
 
-export function PriceChart({ price, days, cursor }: { price: Hourly[]; days: string[]; cursor: SlotCursor }) {
+export function PriceChart({ price, days, cursor }: { price: (Hour & { value: number })[]; days: string[]; cursor: SlotCursor }) {
   const definition = useMemo(() => {
     const top = Math.max(1, ...price.map((d) => d.value)) * 1.15
     return defineChart({
