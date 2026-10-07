@@ -27,7 +27,7 @@ const svgAnimation = { duration: 450, easing: 'ease-in-out' as const }
  * glide there trails the pointer. The last drawn data is recorded after the
  * commit, so a render that runs twice reads the same answer both times.
  */
-function useDataAnimation(data: unknown) {
+export function useDataAnimation(data: unknown) {
   const drawn = useRef(data)
   useEffect(() => {
     drawn.current = data

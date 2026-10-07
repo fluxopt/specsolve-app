@@ -195,3 +195,5 @@ select.future {
 }
 .slider input:disabled { opacity: 0.4; }
 .segmented.sentence button { text-transform: none; }
+/* The last plan's hours, shown while this plan's load. */
+.card.stale { opacity: 0.55; transition: opacity 120ms; }

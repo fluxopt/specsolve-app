@@ -25,16 +25,38 @@ import { scaleBand } from '@tanstack/charts/scales/band'
 import { scaleLinear } from '@tanstack/charts/scales/linear'
 import { scaleOrdinal } from '@tanstack/charts/scales/ordinal'
 import { scalePoint } from '@tanstack/charts/scales/point'
+import { keyedSelection, whenSelected } from '@tanstack/charts/selection'
 import { tooltip } from '@tanstack/charts/tooltip'
 import { interpolateRgbBasis } from 'd3-interpolate'
 import { scaleLog, scaleSequential } from 'd3-scale'
 import { curveBasis } from 'd3-shape'
 
+import { useDataAnimation } from './dispatchCharts'
 import { compact, percent, plain } from './format'
 import type { Driver, FutureCost, Hours, Plan } from './hedge'
 import { SEQUENTIAL, technologyColors } from './palette'
 
 const svgAnimation = { duration: 380, easing: 'ease-in-out' as const }
+
+/**
+ * A chart's selection, held by the page: a click proposes the key of the point under it.
+ *
+ * `field` names the datum field that holds the key; a datum without it is not
+ * selectable. A click on blank space proposes clearing the selection, and is ignored: the
+ * page always shows one plan and one future. Tooltips do not pin, so no click
+ * is spent unpinning one.
+ */
+function picker(selected: string | null, field: string, onPick: (key: string) => void) {
+  return keyedSelection<unknown, string>({
+    selected: controlledSignal<string | null, unknown>(selected, (next) => {
+      if (next !== null) onPick(next)
+    }),
+    key: (datum) => {
+      const value = (datum as Record<string, unknown> | null)?.[field]
+      return typeof value === 'string' ? value : null
+    },
+  })
+}
 
 /** How many bins the cost axis is cut into, evenly on its log scale. */
 const BINS = 32
@@ -96,13 +118,14 @@ export function CostRidgeline({
     )
     const paint = (label: string) =>
       label === here.label ? 'var(--accent)' : label === 'average' ? 'var(--hue-red)' : 'var(--muted)'
+    const selection = picker(here.label, 'label', (label) => onPick(plans.find((q) => q.label === label)!))
     return defineChart({
       marks: [
         ridgelineY(profiles, {
           x: 'x',
           y: 'label',
           height: 'height',
-          overlap: 1.6,
+          overlap: 1.3,
           color: 'label',
           key: (d) => `${d.label}|${d.x}`,
           fillOpacity: 0.32,
@@ -118,8 +141,10 @@ export function CostRidgeline({
       },
       color: { scale: scaleOrdinal<string, string>().domain(labels).range(labels.map(paint)) },
       focus: 'nearest',
+      selection,
       tooltip: {
         use: tooltip,
+        sticky: false,
         content: ([p]) => {
           const plan = plans.find((q) => q.label === (p.datum as { label: string }).label)!
           return {
@@ -132,19 +157,14 @@ export function CostRidgeline({
           }
         },
       },
-      svgAnimation,
     })
-  }, [plans, here, edges])
+  }, [plans, here, edges, onPick])
   return (
     <Chart
       definition={definition}
       height={460}
       className="pickable"
       ariaLabel="How total cost is spread over the futures, one profile per plan; select one to show that plan"
-      onSelect={(p) => {
-        const plan = p?.datum && plans.find((q) => q.label === (p.datum as { label?: string }).label)
-        if (plan) onPick(plan)
-      }}
     />
   )
 }
@@ -223,8 +243,8 @@ export function SavingsChart({
         mass += d.probability
         return { future: d.future, rank, average: d.total, hedge: own.get(d.future)! }
       })
-    const picked = rows.filter((d) => d.future === future)
     const all = rows.flatMap((d) => [d.average, d.hedge])
+    const selection = picker(future, 'future', onPickFuture)
     return defineChart({
       marks: [
         differenceY(rows, {
@@ -240,7 +260,7 @@ export function SavingsChart({
           comparisonStroke: 'var(--hue-red)',
           comparisonStrokeWidth: 2,
         }),
-        decorative(dot(picked, { x: 'rank', y: 'hedge', key: () => 'picked', r: 6, fill: 'var(--ink)', stroke: 'var(--surface)', strokeWidth: 2 })),
+        whenSelected(dot(rows, { x: 'rank', y: 'hedge', key: (d) => d.future, r: 6, fill: 'var(--ink)', stroke: 'var(--surface)', strokeWidth: 2 }), selection),
       ],
       scales: {
         x: {
@@ -251,8 +271,10 @@ export function SavingsChart({
       },
       focus: 'nearest-x',
       maxFocusDistance: Number.POSITIVE_INFINITY,
+      selection,
       tooltip: {
         use: tooltip,
+        sticky: false,
         content: (points) => {
           const d = points.map((p) => p.datum).find((x): x is Paired => 'future' in (x as object))
           if (!d) return { title: '', rows: [] }
@@ -268,17 +290,13 @@ export function SavingsChart({
       },
       svgAnimation,
     })
-  }, [hedge, average, future])
+  }, [hedge, average, future, onPickFuture])
   return (
     <Chart
       definition={definition}
       height={300}
       className="pickable"
       ariaLabel="Total cost in every future under the hedge and under the average plan, with the gap between them shaded; select a future to show its hours"
-      onSelect={(p) => {
-        const d = p?.datum as Partial<Paired> | undefined
-        if (d?.future) onPickFuture(d.future)
-      }}
     />
   )
 }
@@ -302,6 +320,7 @@ export function DriverChart({
     const points: Exposure[] = here.costs.map((d) => ({ ...d, ...drivers.get(d.future)!, inTail: d.total >= here.atRisk }))
     const winds = points.map((d) => d.winterWind)
     const gas = points.map((d) => d.gas)
+    const selection = picker(future, 'future', onPickFuture)
     return defineChart({
       marks: [
         decorative(linearRegressionY(points, { x: 'gas', y: 'opex', stroke: 'var(--muted)', strokeWidth: 2, strokeDasharray: '5 4' })),
@@ -312,12 +331,7 @@ export function DriverChart({
             { x: 'gas', y: 'opex', key: (d) => `tail|${d.future}`, r: 10, fill: 'none', stroke: 'var(--accent)', strokeWidth: 2 },
           ),
         ),
-        decorative(
-          dot(
-            points.filter((d) => d.future === future),
-            { x: 'gas', y: 'opex', key: () => 'picked', r: 13, fill: 'none', stroke: 'var(--ink)', strokeWidth: 2 },
-          ),
-        ),
+        whenSelected(dot(points, { x: 'gas', y: 'opex', key: (d) => d.future, r: 13, fill: 'none', stroke: 'var(--ink)', strokeWidth: 2 }), selection),
       ],
       scales: {
         x: {
@@ -333,8 +347,11 @@ export function DriverChart({
         legend: colorGradientLegend({ label: 'winter wind, mean capacity factor', format: (v: number) => v.toFixed(2) }),
       },
       focus: 'nearest',
+      maxFocusDistance: 28,
+      selection,
       tooltip: {
         use: tooltip,
+        sticky: false,
         content: ([p]) => {
           const d = p.datum as Exposure
           return {
@@ -351,17 +368,13 @@ export function DriverChart({
       },
       svgAnimation,
     })
-  }, [here, drivers, future])
+  }, [here, drivers, future, onPickFuture])
   return (
     <Chart
       definition={definition}
       height={340}
       className="pickable"
       ariaLabel="Operating cost in each future against its gas price, coloured by winter wind, with the tail ringed; select a future to show its hours"
-      onSelect={(p) => {
-        const d = p?.datum as Partial<Exposure> | undefined
-        if (d?.future) onPickFuture(d.future)
-      }}
     />
   )
 }
@@ -385,12 +398,14 @@ export function BuildChart({
   onPick: (plan: Plan) => void
 }) {
   const [visible, setVisible] = useState<readonly string[]>(technologies)
+  const animation = useDataAnimation(visible)
   const definition = useMemo(() => {
     const bars: Built[] = plans.flatMap((p) =>
       technologies.map((generator) => ({ run: p.run, label: p.label, generator, value: p.build.get(generator) ?? 0 })),
     )
     const shown = technologies.filter((g) => visible.includes(g)).reduce((s, g) => s + (here.build.get(g) ?? 0), 0)
     const top = Math.max(...plans.map((p) => [...p.build.values()].reduce((s, v) => s + v, 0)))
+    const selection = picker(here.run, 'run', (run) => onPick(plans.find((q) => q.run === run)!))
     return defineChart({
       marks: [
         barY(bars, {
@@ -422,20 +437,17 @@ export function BuildChart({
         }),
       },
       focus: 'group-x',
-      tooltip,
-      svgAnimation,
+      selection,
+      tooltip: { use: tooltip, sticky: false },
+      svgAnimation: animation,
     })
-  }, [plans, here, technologies, visible])
+  }, [plans, here, technologies, visible, animation, onPick])
   return (
     <Chart
       definition={definition}
       height={300}
       className="pickable"
       ariaLabel="Capacity each plan builds, MW, by technology; select a bar to show that plan"
-      onSelect={(p) => {
-        const plan = p?.datum && plans.find((q) => q.run === (p.datum as Built).run)
-        if (plan) onPick(plan)
-      }}
     />
   )
 }
@@ -443,36 +455,39 @@ export function BuildChart({
 export function FrontierChart({ plans, here, onPick }: { plans: Plan[]; here: Plan; onPick: (plan: Plan) => void }) {
   const definition = useMemo(() => {
     const hedges = plans.filter((p) => p.omega !== null)
+    const selection = picker(here.run, 'run', (run) => onPick(plans.find((q) => q.run === run)!))
     return defineChart({
       marks: [
         decorative(lineY(hedges, { x: 'tail', y: 'expected', key: () => 'frontier', stroke: 'var(--accent)', strokeWidth: 2 })),
         dot(hedges, { x: 'tail', y: 'expected', key: (d) => d.run, r: 4.5, fill: 'var(--accent)', stroke: 'var(--surface)', strokeWidth: 2 }),
         decorative(text(hedges, { x: 'tail', y: 'expected', key: (d) => `label|${d.run}`, text: 'label', dx: 10, anchor: 'start', fill: 'var(--muted)' })),
-        decorative(dot(here.omega === null ? [] : [here], { x: 'tail', y: 'expected', key: () => 'here', r: 9, fill: 'none', stroke: 'var(--ink)', strokeWidth: 2 })),
+        whenSelected(dot(hedges, { x: 'tail', y: 'expected', key: (d) => d.run, r: 9, fill: 'none', stroke: 'var(--ink)', strokeWidth: 2 }), selection),
       ],
       margin: { right: 48 },
       scales: {
         x: { scale: scaleLinear, nice: true, grid: true, axis: { label: 'average cost of the worst tenth', ticks: { format: compact } } },
         y: { scale: scaleLinear, nice: true, grid: true, axis: { label: 'expected cost', ticks: { format: compact } } },
       },
+      focus: 'nearest',
+      maxFocusDistance: 32,
+      selection,
       tooltip: {
         use: tooltip,
+        sticky: false,
         items: [
           { field: 'label', label: 'plan' },
           { field: 'expected', label: 'expected', text: (p) => plain(p.datum.expected) },
           { field: 'tail', label: 'worst tenth', text: (p) => plain(p.datum.tail) },
         ],
       },
-      svgAnimation,
     })
-  }, [plans, here])
+  }, [plans, here, onPick])
   return (
     <Chart
       definition={definition}
       height={300}
       className="pickable"
       ariaLabel="Expected cost against the average cost of the worst tenth, one dot per plan; select one to show it"
-      onSelect={(p) => p?.datum && onPick(p.datum as Plan)}
     />
   )
 }
@@ -560,7 +575,6 @@ export function ResidualBoxes({
               }
         },
       },
-      svgAnimation,
     })
   }, [hours, future, firm, renewables])
   return (
