@@ -29,6 +29,8 @@ export interface Plan {
   capex: number
   /** The probability-weighted total cost over the futures. */
   expected: number
+  /** The value at risk: the total cost the worst `1 - alpha` of the probability begins at. */
+  atRisk: number
   /** The expected total cost of the worst `1 - alpha` of the probability. */
   tail: number
   costs: FutureCost[]
@@ -45,8 +47,20 @@ export interface Hedge {
   vss: number
   alpha: number
   futures: string[]
+  /** What each future drew, read off the risk-neutral plan's sources: the same in every plan. */
+  drivers: Map<string, Driver>
   technologies: string[]
   bytes: number
+}
+
+/** What made a future dear or cheap. */
+export interface Driver {
+  /** The gas price per MWh. */
+  gas: number
+  /** Wind's mean capacity factor on the winter day; a lull drops it to a quarter. */
+  winterWind: number
+  /** The highest load of the year, in MW. */
+  peak: number
 }
 
 type Row = Record<string, unknown> & { specsolve_run: string }
@@ -69,6 +83,17 @@ export function tailMean(values: number[], probabilities: number[], alpha: numbe
     taken += share
   }
   return sum / taken
+}
+
+/** The value at risk: the least cost whose probability of being exceeded is at most `1 - alpha`. */
+export function valueAtRisk(values: number[], probabilities: number[], alpha: number): number {
+  const order = values.map((_, i) => i).sort((a, b) => values[a] - values[b])
+  let mass = 0
+  for (const i of order) {
+    mass += probabilities[i]
+    if (mass >= alpha - 1e-12) return values[i]
+  }
+  return values[order[order.length - 1]]
 }
 
 /**
@@ -142,6 +167,7 @@ export async function loadHedge(): Promise<Hedge> {
       standing: keyed(totals.get(run), 'generator'),
       capex: built,
       expected: costs.reduce((s, d) => s + d.probability * d.total, 0),
+      atRisk: valueAtRisk(values, weights, alpha),
       tail: tailMean(values, weights, alpha),
       costs,
     }
@@ -159,6 +185,7 @@ export async function loadHedge(): Promise<Hedge> {
     const own = perfect.find((q) => q.costs[0].future === d.future)!
     return s + d.probability * own.expected
   }, 0)
+  const drivers = await loadDrivers(neutral.run)
   return {
     plans: [...risk, average],
     neutral,
@@ -167,9 +194,40 @@ export async function loadHedge(): Promise<Hedge> {
     vss: average.expected - neutral.expected,
     alpha,
     futures: neutral.costs.map((d) => d.future).sort(),
+    drivers: drivers.drivers,
     technologies: [...new Set(build.map((d) => String(d.generator)))].sort(),
-    bytes: files.reduce((sum, f) => sum + f.bytes, 0),
+    bytes: files.reduce((sum, f) => sum + f.bytes, 0) + drivers.bytes,
   }
+}
+
+/**
+ * Read what each future drew off one plan's sources: three files.
+ *
+ * The page knows the showcase model by name here — a `gas` generator, a
+ * `wind` generator and a `winter` day — because the drivers are its story.
+ */
+async function loadDrivers(run: string): Promise<{ drivers: Map<string, Driver>; bytes: number }> {
+  const directory = `hedge/${run}`
+  const files = await Promise.all([
+    read<Row>(directory, 'sources/cost.parquet', ['future', 'generator', 'value']),
+    read<Row>(directory, 'sources/avail.parquet', ['future', 'day', 'generator', 'value']),
+    read<Row>(directory, 'sources/load.parquet', ['future', 'value']),
+  ])
+  const [cost, avail, load] = files.map((f) => f.rows)
+  const drivers = new Map<string, Driver>()
+  const of = (future: string) => {
+    if (!drivers.has(future)) drivers.set(future, { gas: 0, winterWind: 0, peak: 0 })
+    return drivers.get(future)!
+  }
+  for (const d of cost) if (d.generator === 'gas') of(String(d.future)).gas = Number(d.value)
+  const winter = avail.filter((d) => d.generator === 'wind' && d.day === 'winter')
+  const hours = winter.length / new Set(winter.map((d) => String(d.future))).size
+  for (const d of winter) of(String(d.future)).winterWind += Number(d.value) / hours
+  for (const d of load) {
+    const driver = of(String(d.future))
+    driver.peak = Math.max(driver.peak, Number(d.value))
+  }
+  return { drivers, bytes: files.reduce((sum, f) => sum + f.bytes, 0) }
 }
 
 /** One hour of one typical day of one future. */

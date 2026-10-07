@@ -36,7 +36,7 @@ function useDataAnimation(data: unknown) {
 }
 
 /** The hour axis: every typical day end to end, ticked every six hours, with the day's name over its middle. */
-export function hourAxis(days: string[]) {
+function hourAxis(days: string[]) {
   const values = days.flatMap((_, i) => [0, 6, 12, 18].map((h) => i * 24 + h))
   return {
     scale: scaleLinear().domain([0, days.length * 24 - 1]),
@@ -44,8 +44,7 @@ export function hourAxis(days: string[]) {
   }
 }
 
-/** A dashed rule between the typical days, and each day's name over its middle at the height `top`. */
-export function dayMarks(days: string[], top: number) {
+function dayMarks(days: string[], top: number) {
   const bounds = days.slice(1).map((_, i) => (i + 1) * 24 - 0.5)
   return [
     decorative(ruleX(bounds, { strokeOpacity: 0.35, strokeDasharray: '3 3' })),

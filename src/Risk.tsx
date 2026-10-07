@@ -4,7 +4,16 @@ import { createChartCursor } from '@tanstack/charts/cursor'
 import { OutputChart, PriceChart, type SlotCursor } from './dispatchCharts'
 import { compact, percent, plain } from './format'
 import { type Hedge, type Hours, type Plan, loadHedge, loadHours } from './hedge'
-import { BuildChart, CostCurve, FanChart, FrontierChart, WeightChart } from './riskCharts'
+import {
+  BuildChart,
+  CostHistogram,
+  CostRidgeline,
+  DriverChart,
+  FrontierChart,
+  ResidualBoxes,
+  SavingsChart,
+  costEdges,
+} from './riskCharts'
 import { Tile } from './Tile'
 
 /** What the page leaves to wind and solar when it draws what the rest of the fleet must cover. */
@@ -50,6 +59,8 @@ function Page({ hedge }: { hedge: Hedge }) {
     [hedge],
   )
   const [future, setFuture] = useState(dearest)
+  const edges = useMemo(() => costEdges(hedge.plans), [hedge])
+  const hedging = hedges[index]
   const { hours, error } = useHours(here)
   const cursor = useMemo<SlotCursor>(() => createChartCursor<number, number>(), [])
   const hovered = useSyncExternalStore(cursor.subscribe, () => cursor.getState()?.value?.x ?? null)
@@ -135,43 +146,65 @@ function Page({ hedge }: { hedge: Hedge }) {
         />
       </div>
 
+      <div className="card">
+        <h2>How each plan's cost is spread over the {n} futures</h2>
+        <p className="muted">
+          One profile per plan: how many futures land at each total cost, on a log scale. The filled dot is the expected
+          cost, the ring the average of the worst {tailCount}. As the weight on the tail rises the right edge pulls in;
+          the plan made for the average future, in red, trails a tail four times as long. Select a profile to show that
+          plan.
+        </p>
+        <CostRidgeline plans={hedge.plans} here={here} edges={edges} onPick={pick} />
+      </div>
+
+      <div className="grid two">
+        <div className="card">
+          <h2>The tail of {here.omega === null ? 'the average plan' : `the hedge at ${here.label}`}</h2>
+          <p className="muted">
+            How many futures fall at each cost. The value at risk is where the worst tenth begins, and the blue bars, from
+            the one that holds it on, hold the tail whose average the plan weighs.
+          </p>
+          <CostHistogram here={here} edges={edges} />
+        </div>
+        <div className="card">
+          <h2>Where the hedge at {hedging.label} pays, future by future</h2>
+          <p className="muted">
+            Each future's cost under the hedge, in blue, against the plan made for the average, in red. Green is what the
+            hedge saves; orange is the premium it pays in the futures that turn out mild. Select a future to show its
+            hours.
+          </p>
+          <SavingsChart hedge={hedging} average={hedge.average} future={future} onPickFuture={setFuture} />
+        </div>
+      </div>
+
       <div className="grid two">
         <div className="card">
           <h2>What each plan builds, MW</h2>
           <p className="muted">
             The more a plan weighs the worst futures, the more it builds. The peaker is the insurance: cheap to build, dear
-            to run, and idle in most futures. Select a bar to show that plan.
+            to run, and idle in most futures. Select a bar to show that plan; the legend hides a technology.
           </p>
           <BuildChart plans={hedge.plans} here={here} technologies={hedge.technologies} onPick={pick} />
         </div>
         <div className="card">
           <h2>What the insurance costs</h2>
           <p className="muted">
-            Expected cost against the cost in the worst {tailCount} futures, one dot per weight on the tail. Moving along
-            the curve trades one for the other. The plan made for the average future is off the chart, worse on both:{' '}
-            {compact(hedge.average.expected)} expected, {compact(hedge.average.tail)} in the worst futures.
+            Expected cost against the average cost of the worst {tailCount} futures, one dot per weight on the tail. The
+            plan made for the average future is off the chart, worse on both: {compact(hedge.average.expected)} expected,{' '}
+            {compact(hedge.average.tail)} in the worst futures.
           </p>
           <FrontierChart plans={hedge.plans} here={here} onPick={pick} />
         </div>
       </div>
 
-      <div className="grid two">
-        <div className="card">
-          <h2>What each future costs</h2>
-          <p className="muted">
-            Every future, dearest first, as wide as its probability. The shaded band is the tail the plan weighs. Select a
-            future to show its hours below.
-          </p>
-          <CostCurve here={here} neutral={hedge.neutral} average={hedge.average} alpha={hedge.alpha} future={future} onPickFuture={setFuture} />
-        </div>
-        <div className="card">
-          <h2>How the plan weighs the futures</h2>
-          <p className="muted">
-            Each future's weight in the plan: its probability, the dashed line, shifted toward the dearest futures by the
-            weight on the tail. Read off the dual of each future's tail row.
-          </p>
-          <WeightChart here={here} future={future} onPickFuture={setFuture} />
-        </div>
+      <div className="card">
+        <h2>What makes a future dear</h2>
+        <p className="muted">
+          Each future's operating cost under this plan against the gas price it drew, coloured by how hard the wind blew
+          in winter; dark is a lull. The futures in the tail are ringed. The dashed fit's slope is the plan's exposure to
+          gas, and it flattens as the weight on the tail buys wind and solar. Select a future to show its hours.
+        </p>
+        <DriverChart here={here} drivers={hedge.drivers} future={future} onPickFuture={setFuture} />
       </div>
 
       <div className="card">
@@ -213,11 +246,12 @@ function Page({ hedge }: { hedge: Hedge }) {
         <div className="card">
           <h2>What wind and solar leave, in every future</h2>
           <p className="muted">
-            The demand that gas, the peaker and shedding cover in each hour, across all {n} futures: the full range, the
-            middle 80%, and the median dashed. The solid line is {future}. Above the red line, firm capacity runs out and
-            demand is shed.
+            The demand that gas, the peaker and shedding cover in each hour, as a box over all {n} futures: the middle
+            half, whiskers to the last future within 1.5 times its spread, and the futures past that as dots. On most winter
+            hours the wind leaves nothing in most futures, so the box sits at zero and the dots above it are the lulls. The
+            line is {future}. Above the red line, firm capacity runs out and demand is shed.
           </p>
-          <FanChart hours={hours} future={future} firm={firm} renewables={RENEWABLES} />
+          <ResidualBoxes hours={hours} future={future} firm={firm} renewables={RENEWABLES} />
         </div>
       )}
     </>
