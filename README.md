@@ -27,11 +27,20 @@ answer a glob: `archive/grid/answer/primal/total.parquet` is
 `read_parquet('grid/*/answer/primal/total.parquet')`. Every row names its
 archive in `specsolve_run`.
 
-The **What if** page reads seven of those files, about 23 KB, with
-[hyparquet](https://github.com/hyparam/hyparquet), and joins them in
-[`src/grid.ts`](src/grid.ts). Every chart updates in place and animates from
-the old point to the new one when a slider moves; selecting a heatmap cell
-moves the sliders.
+Two pages, each reading a handful of stacked files with
+[hyparquet](https://github.com/hyparam/hyparquet) and joining them in
+TypeScript:
+
+- **What if** ([`src/grid.ts`](src/grid.ts)) reads seven files of the what-if
+  grid, about 23 KB. Every chart updates in place and animates from the old
+  point to the new one when a slider moves; selecting a heatmap cell moves
+  the sliders.
+- **Dispatch** ([`src/dispatch.ts`](src/dispatch.ts)) reads five files of the
+  four scenarios: hourly output, the balance constraint's dual, the load, the
+  day weights and the emission rates. It plays the pathway period by period,
+  morphing the stacked output from one fleet to the next, and one shared
+  cursor ties the hour axis of the output and price charts to the
+  price-duration curve beside them.
 
 ## Run it
 

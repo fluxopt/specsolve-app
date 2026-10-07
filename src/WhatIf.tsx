@@ -3,16 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { EmissionsChart, FleetChart, FrontierChart, Heatmap } from './charts'
 import { compact, percent, plain } from './format'
 import { type Grid, type Point, loadGrid } from './grid'
-
-function Tile({ label, value, note }: { label: string; value: string; note: string }) {
-  return (
-    <div className="card tile">
-      <div className="tile-label">{label}</div>
-      <div className="tile-value">{value}</div>
-      <div className="tile-note">{note}</div>
-    </div>
-  )
-}
+import { Tile } from './Tile'
 
 function Slider({
   label,
