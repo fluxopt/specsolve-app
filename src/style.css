@@ -144,3 +144,46 @@ nav.top .muted { margin-left: auto; font-size: 0.85rem; }
 
 /* A chart takes keyboard focus; a mouse click on it should not leave the focus outline behind. */
 .ts-chart-host:focus:not(:focus-visible), .ts-chart-host :focus:not(:focus-visible) { outline: none; }
+
+.explore { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr); gap: 1rem; align-items: start; }
+@media (max-width: 900px) { .explore { grid-template-columns: minmax(0, 1fr); } }
+.explore .card { margin-bottom: 0; }
+.catalog .table-wrap { max-height: 70vh; overflow: auto; }
+.search, .filter {
+  font: inherit; font-size: 0.85rem; color: var(--ink); background: var(--page);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 0.35rem 0.5rem; width: 100%;
+}
+.search { margin: 0.5rem 0 0; }
+.filter { margin-top: 0.3rem; min-width: 5.5rem; font-weight: 400; }
+th .th { display: flex; gap: 0.4rem; align-items: center; justify-content: space-between; }
+button.sort, button.expand {
+  font: inherit; font-weight: 600; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; white-space: nowrap;
+}
+button.expand { font-weight: 600; }
+button.group {
+  font: inherit; font-size: 0.7rem; color: var(--muted); background: none; border: 1px solid var(--rule);
+  border-radius: 999px; padding: 0.05rem 0.45rem; cursor: pointer;
+}
+button.group.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+table.rows td { font-variant-numeric: tabular-nums; }
+table.rows tbody tr { cursor: default; }
+tr.grouped { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.hint { font-size: 0.85rem; color: var(--muted); margin: 0 0 0.5rem; }
+.pager { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.75rem; font-size: 0.85rem; }
+.pager button {
+  font: inherit; width: 2rem; height: 2rem; border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.pager button:disabled { opacity: 0.35; cursor: default; }
+.readit { margin-top: 1rem; border-top: 1px solid var(--rule); padding-top: 0.75rem; font-size: 0.85rem; }
+.readit-head { font-weight: 600; margin-bottom: 0.4rem; }
+.snippet { display: grid; grid-template-columns: 4rem minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; margin-top: 0.3rem; }
+.snippet code { overflow-x: auto; white-space: nowrap; background: var(--page); border-radius: 6px; padding: 0.3rem 0.5rem; }
+.snippet button {
+  font: inherit; font-size: 0.8rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface);
+  color: var(--ink); padding: 0.25rem 0.6rem; cursor: pointer;
+}
+table.entries th, table.entries td { text-align: left; white-space: normal; }
+.controls .segmented.paths button { text-transform: none; font-family: ui-monospace, monospace; }
+table.rows th, table.rows td { text-align: left; }
+table.rows th:last-child, table.rows td:last-child { text-align: right; }
