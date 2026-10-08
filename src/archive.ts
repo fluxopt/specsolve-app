@@ -18,16 +18,28 @@ export const ARCHIVE: string =
  * zstd. Integer columns arrive as `bigint`, so callers convert the ones they
  * do arithmetic on. `bytes` is the size of the file the rows came from.
  *
- * Throws if the server answers with an error status.
+ * A file read once is kept for the visit, so a page opened again reads
+ * nothing over the network. The rows are shared: callers map them rather
+ * than change them.
+ *
+ * Throws if the server answers with an error status; a failed read is not kept.
  */
-export async function read<Row>(
-  directory: string,
-  path: string,
-  columns: string[],
-): Promise<{ rows: Row[]; bytes: number }> {
+const cache = new Map<string, Promise<{ rows: unknown[]; bytes: number }>>()
+
+export function read<Row>(directory: string, path: string, columns: string[]): Promise<{ rows: Row[]; bytes: number }> {
   const url = new URL(`${ARCHIVE}/${directory}/${path}`, window.location.href).href
+  const key = `${url}|${columns.join(',')}`
+  if (!cache.has(key)) {
+    const reading = fetchRows(url, columns)
+    reading.catch(() => cache.delete(key))
+    cache.set(key, reading)
+  }
+  return cache.get(key)! as Promise<{ rows: Row[]; bytes: number }>
+}
+
+async function fetchRows(url: string, columns: string[]): Promise<{ rows: unknown[]; bytes: number }> {
   const response = await fetch(url)
   if (!response.ok) throw new Error(`${url} answered ${response.status}`)
   const file = await response.arrayBuffer()
-  return { rows: (await parquetReadObjects({ file, columns, compressors })) as Row[], bytes: file.byteLength }
+  return { rows: await parquetReadObjects({ file, columns, compressors }), bytes: file.byteLength }
 }

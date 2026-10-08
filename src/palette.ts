@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react'
+
 /**
  * Colour by entity, in a fixed order, from the showcase's validated palette.
  *
@@ -15,3 +17,26 @@ export function technologyColors(names: string[]): string[] {
 
 /** The single-hue sequential ramp for a magnitude, light to dark. */
 export const SEQUENTIAL = ['#cde2fb', '#86b6ef', '#3987e5', '#1c5cab', '#0d366b']
+
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+/** Whether the page is drawn dark: the stylesheet follows the system setting, and this follows it too. */
+export function useDark(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      darkQuery.addEventListener('change', onChange)
+      return () => darkQuery.removeEventListener('change', onChange)
+    },
+    () => darkQuery.matches,
+  )
+}
+
+/**
+ * The sequential ramp oriented so its first colour stands out most from the page: dark on light, light on dark.
+ *
+ * For a scale whose low end is the one to notice, where a colour that suits
+ * one theme would sink into the background of the other.
+ */
+export function salientRamp(dark: boolean): string[] {
+  return dark ? SEQUENTIAL : [...SEQUENTIAL].reverse()
+}
