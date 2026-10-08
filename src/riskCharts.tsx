@@ -34,7 +34,7 @@ import { curveBasis } from 'd3-shape'
 import { useDataAnimation } from './dispatchCharts'
 import { compact, percent, plain } from './format'
 import type { Driver, FutureCost, Hours, Plan } from './hedge'
-import { SEQUENTIAL, technologyColors } from './palette'
+import { salientRamp, technologyColors, useDark } from './palette'
 
 const svgAnimation = { duration: 380, easing: 'ease-in-out' as const }
 
@@ -316,6 +316,7 @@ export function DriverChart({
   future: string
   onPickFuture: (future: string) => void
 }) {
+  const dark = useDark()
   const definition = useMemo(() => {
     const points: Exposure[] = here.costs.map((d) => ({ ...d, ...drivers.get(d.future)!, inTail: d.total >= here.atRisk }))
     const winds = points.map((d) => d.winterWind)
@@ -343,7 +344,7 @@ export function DriverChart({
         y: { scale: scaleLinear, nice: true, grid: true, axis: { label: 'operating cost in the future', ticks: { format: compact } } },
       },
       color: {
-        scale: scaleSequential(interpolateRgbBasis([...SEQUENTIAL].reverse())).domain([Math.min(...winds), Math.max(...winds)]),
+        scale: scaleSequential(interpolateRgbBasis(salientRamp(dark))).domain([Math.min(...winds), Math.max(...winds)]),
         legend: colorGradientLegend({ label: 'winter wind, mean capacity factor', format: (v: number) => v.toFixed(2) }),
       },
       focus: 'nearest',
@@ -368,7 +369,7 @@ export function DriverChart({
       },
       svgAnimation,
     })
-  }, [here, drivers, future, onPickFuture])
+  }, [here, drivers, future, onPickFuture, dark])
   return (
     <Chart
       definition={definition}
