@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { read } from './archive'
 import { FleetChart } from './charts'
+import { DataEditor, editedCells } from './DataEditor'
 import { compact, plain } from './format'
 import type { Standing } from './grid'
-import { type Answer, loadQuestion, type Question, rowsFrom, solve } from './solver'
+import { type Answer, type Columns, loadQuestion, type Question, rowsFrom, solve } from './solver'
 import { Tile } from './Tile'
 
 /** What one solve of the pathway came to, read off an archive whether it was published or written in this tab. */
@@ -67,7 +68,7 @@ export function Solve() {
 type Run =
   | { state: 'idle' }
   | { state: 'running'; stage: string; started: number }
-  | { state: 'done'; local: Outcome; seconds: number; waited: number }
+  | { state: 'done'; local: Outcome; seconds: number; waited: number; edited: boolean }
   | { state: 'refused'; message: string }
   | { state: 'failed'; message: string }
 
@@ -76,6 +77,7 @@ function Page({ published }: { published: Map<string, Outcome> }) {
   const [scenario, setScenario] = useState(scenarios.includes('base') ? 'base' : scenarios[0])
   const [question, setQuestion] = useState<Question | null>(null)
   const [spec, setSpec] = useState('')
+  const [sources, setSources] = useState<Record<string, Columns>>({})
   const [run, setRun] = useState<Run>({ state: 'idle' })
 
   useEffect(() => {
@@ -87,6 +89,7 @@ function Page({ published }: { published: Map<string, Outcome> }) {
         if (!current) return
         setQuestion(q)
         setSpec(q.spec)
+        setSources(q.sources)
       },
       (e: unknown) => current && setRun({ state: 'failed', message: String(e) }),
     )
@@ -95,22 +98,30 @@ function Page({ published }: { published: Map<string, Outcome> }) {
     }
   }, [scenario])
 
+  const edit = useCallback(
+    (name: string, changes: Map<number, number>) =>
+      setSources((now) => ({ ...now, [name]: { ...now[name], value: now[name].value.map((v, i) => changes.get(i) ?? v) } })),
+    [],
+  )
+
   const go = async () => {
     if (!question) return
     const started = performance.now()
     setRun({ state: 'running', stage: 'Starting', started })
     try {
-      const answer = await solve({ ...question, spec }, (stage) => setRun({ state: 'running', stage, started }))
+      const answer = await solve({ ...question, spec, sources }, (stage) => setRun({ state: 'running', stage, started }))
       if ('refused' in answer) return setRun({ state: 'refused', message: answer.refused })
       const local = localOutcome(answer)
-      setRun({ state: 'done', local, seconds: answer.seconds, waited: (performance.now() - started) / 1000 })
+      setRun({ state: 'done', local, seconds: answer.seconds, waited: (performance.now() - started) / 1000, edited })
     } catch (e) {
       setRun({ state: 'failed', message: e instanceof Error ? e.message : String(e) })
     }
   }
 
   const reference = published.get(scenario)!
-  const edited = question !== null && spec !== question.spec
+  const specEdited = question !== null && spec !== question.spec
+  const cellsEdited = question === null ? 0 : Object.values(editedCells(sources, question.sources)).reduce((a, b) => a + b, 0)
+  const edited = specEdited || cellsEdited > 0
   const busy = run.state === 'running'
 
   return (
@@ -120,8 +131,8 @@ function Page({ published }: { published: Map<string, Outcome> }) {
         <p>
           Every other page reads answers the showcase solved ahead of time. This one asks the question again. It loads Python
           and specsolve into your browser, takes a scenario's model and data straight out of its published archive, and
-          solves the pathway here with HiGHS. Edit the model and solve again, and compare what comes back with what was
-          published. The first solve downloads Python and its packages, which takes a while; nothing leaves your machine.
+          solves the pathway here with HiGHS. Change the data or the model, solve again, and compare what comes back with
+          what was published. The first solve downloads Python and its packages, which takes a while; nothing leaves your machine.
         </p>
       </header>
 
@@ -137,8 +148,15 @@ function Page({ published }: { published: Map<string, Outcome> }) {
           <button className="action" onClick={go} disabled={!question || busy}>
             {busy ? `${run.stage}…` : 'Solve in this tab'}
           </button>
-          {edited && (
-            <button className="link" onClick={() => setSpec(question.spec)} disabled={busy}>
+          {question && edited && (
+            <button
+              className="link"
+              onClick={() => {
+                setSpec(question.spec)
+                setSources(question.sources)
+              }}
+              disabled={busy}
+            >
               Undo my edits
             </button>
           )}
@@ -156,10 +174,12 @@ function Page({ published }: { published: Map<string, Outcome> }) {
           The solve did not run: {run.message}
         </p>
       )}
-      {run.state === 'done' && <Compare scenario={scenario} local={run.local} reference={reference} seconds={run.seconds} waited={run.waited} edited={edited} />}
+      {run.state === 'done' && <Compare scenario={scenario} local={run.local} reference={reference} seconds={run.seconds} waited={run.waited} edited={run.edited} />}
+
+      {question && <DataEditor key={scenario} sources={sources} published={question.sources} onEdit={edit} disabled={busy} />}
 
       <div className="card">
-        <h2>The model{edited ? ', as you edited it' : ''}</h2>
+        <h2>The model{specEdited ? ', as you edited it' : ''}</h2>
         <p className="muted">
           <code>spec.yaml</code> of <code>runs/{scenario}</code>: one investment period, which the archive's axis runs once per
           year, each year inheriting the fleet the last one left.

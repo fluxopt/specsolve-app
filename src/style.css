@@ -214,3 +214,17 @@ textarea.spec {
 table.periods tbody tr { cursor: default; }
 .card.refused { border-color: var(--hue-red); }
 .card.refused pre { margin: 0.5rem 0 0; white-space: pre-wrap; font-size: 0.82rem; color: var(--hue-red); }
+input.cell {
+  font: inherit; font-size: 0.85rem; font-variant-numeric: tabular-nums; text-align: right; width: 8.5rem;
+  color: var(--ink); background: var(--page); border: 1px solid var(--rule); border-radius: 6px; padding: 0.2rem 0.4rem;
+}
+input.cell.edited { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--page)); font-weight: 600; }
+table.editor tbody tr { cursor: default; }
+table.editor td { padding-top: 0.15rem; padding-bottom: 0.15rem; }
+.segmented.parameters { font-family: ui-monospace, monospace; }
+table.editor th { vertical-align: top; }
+table.editor th:last-child .th { justify-content: flex-end; }
+.scale { display: flex; gap: 0.5rem; align-items: center; margin-left: auto; }
+.scale input.cell { width: 5.5rem; }
+.pager button.apply { width: auto; padding: 0 0.75rem; }
+@media (max-width: 640px) { .scale { margin-left: 0; } }

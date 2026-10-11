@@ -64,8 +64,10 @@ TypeScript:
 
 **Solve** ([`src/Solve.tsx`](src/Solve.tsx)) asks a scenario's question again.
 It reads the scenario's own inputs out of its published archive (`spec.yaml`,
-`axis.json` and every `sources/<name>.parquet`), shows the spec in an editor,
-and solves the pathway with specsolve and HiGHS in a Web Worker
+`axis.json` and every `sources/<name>.parquet`), shows every parameter in a
+table whose values you can type over or scale a filtered set of rows at once
+([`src/DataEditor.tsx`](src/DataEditor.tsx)), shows the spec in an editor, and
+solves the pathway with specsolve and HiGHS in a Web Worker
 ([`src/solver.worker.ts`](src/solver.worker.ts)). The worker loads
 [Pyodide](https://pyodide.org) from its CDN at the version `package.json` pins,
 installs specsolve from PyPI, and runs [`src/solve.py`](src/solve.py). The page
