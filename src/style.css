@@ -197,3 +197,20 @@ select.future {
 .segmented.sentence button { text-transform: none; }
 /* The last plan's hours, shown while this plan's load. */
 .card.stale { opacity: 0.55; transition: opacity 120ms; }
+
+.solve-actions { display: flex; gap: 0.75rem; align-items: center; }
+button.action {
+  font: inherit; font-size: 0.9rem; font-weight: 600; padding: 0.4rem 1rem; border: 0; border-radius: 8px;
+  background: var(--accent); color: #fff; cursor: pointer;
+}
+button.action:disabled { opacity: 0.6; cursor: progress; }
+button.link { font: inherit; font-size: 0.85rem; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; }
+.segmented button:disabled { cursor: default; }
+textarea.spec {
+  display: block; width: 100%; margin-top: 0.5rem; resize: vertical; tab-size: 2;
+  font: 0.82rem/1.45 ui-monospace, 'SF Mono', Menlo, monospace; color: var(--ink); background: var(--page);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 0.6rem 0.75rem;
+}
+table.periods tbody tr { cursor: default; }
+.card.refused { border-color: var(--hue-red); }
+.card.refused pre { margin: 0.5rem 0 0; white-space: pre-wrap; font-size: 0.82rem; color: var(--hue-red); }

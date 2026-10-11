@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { Dispatch } from './Dispatch'
 import { Explore } from './Explore'
 import { Risk } from './Risk'
+import { Solve } from './Solve'
 import './style.css'
 import { WhatIf } from './WhatIf'
 
@@ -13,6 +14,7 @@ const PAGES = {
   dispatch: { title: 'Dispatch', page: Dispatch },
   risk: { title: 'Risk', page: Risk },
   explore: { title: 'Explore', page: Explore },
+  solve: { title: 'Solve', page: Solve },
 }
 type Route = keyof typeof PAGES
 

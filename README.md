@@ -3,7 +3,7 @@
 An example client of [specsolve](https://github.com/fluxopt/specsolve) archives:
 a static React app, with charts by [TanStack Charts](https://github.com/TanStack/charts),
 that reads the archives the [specsolve showcase](https://github.com/fluxopt/specsolve-showcase)
-publishes and solves nothing itself.
+publishes, and on one page solves the showcase's model again in the browser.
 
 **Live:** <https://fluxopt.github.io/specsolve-app/>
 
@@ -15,8 +15,9 @@ specsolve-showcase                                      specsolve-app
 
 The showcase's own site is one client of those archives. This app is another,
 built with a different stack, to make the point the showcase makes: **the
-contract is the archive directory, not a library.** Nothing here imports
-specsolve, and nothing here is shared with the showcase except the URL.
+contract is the archive directory, not a library.** No page that reads an
+answer imports specsolve, and nothing here is shared with the showcase except
+the URL.
 
 ## What it reads
 
@@ -58,6 +59,29 @@ TypeScript:
   [TanStack Table](https://github.com/TanStack/table) to filter, sort and
   group, with the URL of the file it read and the one line that reads it
   from DuckDB or polars.
+
+## Solving in the tab
+
+**Solve** ([`src/Solve.tsx`](src/Solve.tsx)) asks a scenario's question again.
+It reads the scenario's own inputs out of its published archive (`spec.yaml`,
+`axis.json` and every `sources/<name>.parquet`), shows the spec in an editor,
+and solves the pathway with specsolve and HiGHS in a Web Worker
+([`src/solver.worker.ts`](src/solver.worker.ts)). The worker loads
+[Pyodide](https://pyodide.org) from its CDN at the version `package.json` pins,
+installs specsolve from PyPI, and runs [`src/solve.py`](src/solve.py). The page
+puts what comes back beside the published answer.
+
+Two limits of Pyodide's polars decide the shape of this:
+
+- **It is polars 1.** specsolve 0.7 and later require polars 2, so the worker
+  pins specsolve 0.6.2, the release the showcase's archives were solved with.
+- **It reads and writes no parquet.** The page reads the sources with hyparquet
+  and passes them to Python as columns, and the worker solves without
+  `archive=` and returns the record and every variable's values as columns.
+
+The first solve downloads about 38 MB of Python and packages. After two solves
+the tab holds about 770 MB, so a desktop browser is fine and a phone may
+reload the page.
 
 ## Run it
 
