@@ -42,7 +42,7 @@ TypeScript:
   cursor ties the hour axis of the output and price charts to the
   price-duration curve beside them.
 - **Risk** ([`src/hedge.ts`](src/hedge.ts)) reads ten files of the hedge, about
-  30 KB: one investment period planned against 60 futures at once, at ten
+  28 KB: one investment period planned against 60 futures at once, at ten
   weights on the worst tenth of them, beside the plan made for the average
   future and the plans made with perfect foresight. It draws what each plan
   builds, the trade between expected cost and the cost in the worst futures,
