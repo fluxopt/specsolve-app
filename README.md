@@ -69,7 +69,8 @@ shows every parameter in a table whose values you can type over or scale a
 filtered set of rows at once ([`src/DataEditor.tsx`](src/DataEditor.tsx)),
 shows the spec in a code editor ([`src/SpecEditor.tsx`](src/SpecEditor.tsx))
 that completes, explains and checks it against mathspec's own schema
-([`src/specSchema.ts`](src/specSchema.ts)) as you type, and
+([`src/specSchema.ts`](src/specSchema.ts)) as you type, with the model as
+math beside it ([`src/MathPreview.tsx`](src/MathPreview.tsx)), and
 solves the pathway with specsolve and HiGHS in a Web Worker
 ([`src/solver.worker.ts`](src/solver.worker.ts)). The worker loads
 [Pyodide](https://pyodide.org) from its CDN at the version `package.json` pins,
@@ -86,6 +87,10 @@ included, and the answer comes back as columns.
 that `sps.load_archive` and DuckDB read. specsolve writes it through pyarrow
 where polars has no parquet, so the worker loads pyarrow the first time it is
 asked for one, about 15 MB more.
+
+The math is mathspec's `to_markdown` of the spec, run in the worker and
+rendered with KaTeX. It needs Python, so it starts after a solve or when asked,
+never on a visit alone, and then follows each edit.
 
 The first solve downloads about 38 MB of Python and packages. After two solves
 the tab holds about 780 MB, and about 1.1 GB once pyarrow is loaded, so a

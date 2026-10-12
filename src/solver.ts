@@ -30,10 +30,14 @@ export interface Answer {
   seconds: number
 }
 
-/** What the worker posts: a stage while it works, then one answer, refusal or failure. */
+/** What the page asks the worker: to solve a question, or to typeset a spec. */
+export type Ask = { kind: 'solve'; question: Question } | { kind: 'typeset'; spec: string }
+
+/** What the worker posts: a stage while it works, then one answer, typeset model, refusal or failure. */
 export type Reply =
   | { kind: 'stage'; stage: string }
   | { kind: 'answer'; answer: Answer }
+  | { kind: 'typeset'; markdown: string }
   | { kind: 'refused'; message: string }
   | { kind: 'failed'; message: string }
 
@@ -41,30 +45,50 @@ let worker: Worker | null = null
 let queue: Promise<unknown> = Promise.resolve()
 
 /**
- * Solve *question* in the worker, which loads Python and specsolve on its first solve.
+ * Send *ask* to the worker, which loads Python and specsolve on its first ask, and resolve to its final reply.
  *
- * Solves run one at a time, in the order asked. *onStage* hears what the
- * worker is doing. Resolves to the answer, or to the message specsolve gave
- * where it refused the spec or its data; rejects if Python itself failed.
+ * Asks run one at a time, in the order asked. *onStage* hears what the worker
+ * is doing. Rejects if Python itself failed.
  */
-export function solve(question: Question, onStage: (stage: string) => void): Promise<Answer | { refused: string }> {
+function asked(ask: Ask, onStage: (stage: string) => void): Promise<Exclude<Reply, { kind: 'stage' | 'failed' }>> {
   worker ??= new Worker(new URL('./solver.worker.ts', import.meta.url), { type: 'module' })
   const running = worker
-  const asked = queue.then(
+  const reply = queue.then(
     () =>
-      new Promise<Answer | { refused: string }>((resolve, reject) => {
+      new Promise<Exclude<Reply, { kind: 'stage' | 'failed' }>>((resolve, reject) => {
         running.onmessage = ({ data }: MessageEvent<Reply>) => {
           if (data.kind === 'stage') onStage(data.stage)
-          else if (data.kind === 'answer') resolve(data.answer)
-          else if (data.kind === 'refused') resolve({ refused: data.message })
-          else reject(new Error(data.message))
+          else if (data.kind === 'failed') reject(new Error(data.message))
+          else resolve(data)
         }
         running.onerror = (event) => reject(new Error(event.message || 'the solver worker failed to start'))
-        running.postMessage(question)
+        running.postMessage(ask)
       }),
   )
-  queue = asked.catch(() => undefined)
-  return asked
+  queue = reply.catch(() => undefined)
+  return reply
+}
+
+/**
+ * Solve *question* in the worker. Resolves to the answer, or to the message specsolve gave where it refused the spec
+ * or its data; rejects if Python itself failed.
+ */
+export async function solve(question: Question, onStage: (stage: string) => void): Promise<Answer | { refused: string }> {
+  const reply = await asked({ kind: 'solve', question }, onStage)
+  if (reply.kind === 'answer') return reply.answer
+  if (reply.kind === 'refused') return { refused: reply.message }
+  throw new Error(`the worker answered a solve with ${reply.kind}`)
+}
+
+/**
+ * Typeset *spec* in the worker as mathspec does: Markdown with its math in LaTeX. Resolves to the text, or to the
+ * message mathspec gave where it refused the spec; rejects if Python itself failed.
+ */
+export async function typeset(spec: string, onStage: (stage: string) => void): Promise<{ markdown: string } | { refused: string }> {
+  const reply = await asked({ kind: 'typeset', spec }, onStage)
+  if (reply.kind === 'typeset') return { markdown: reply.markdown }
+  if (reply.kind === 'refused') return { refused: reply.message }
+  throw new Error(`the worker answered a typeset with ${reply.kind}`)
 }
 
 /**

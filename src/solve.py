@@ -1,6 +1,7 @@
 """Ask a published sweep's question again, in the browser.
 
-The worker writes this module into Pyodide and calls `solve`. Pyodide's polars
+The worker writes this module into Pyodide and calls `solve`, or `typeset` for
+the page's preview of the model. Pyodide's polars
 reads and writes no parquet, so the page reads the archive's sources and hands
 them over as columns, and the answer comes back as columns. Where the page asks
 for an archive too, the worker has loaded pyarrow, which specsolve writes the
@@ -13,7 +14,7 @@ from pathlib import Path
 
 import polars as pl
 import specsolve as sps
-from mathspec import to_spec
+from mathspec import to_markdown, to_spec
 
 #: The record columns the page reads, beside the sweep's key.
 RECORD = ['termination_condition', 'objective']
@@ -43,3 +44,11 @@ def solve(spec: str, sources: dict[str, dict[str, list]], axis: str, archive: bo
         'primal': {name: sweep.primal(name).to_dict(as_series=False) for name in declared.variables},
         **({'archive': ARCHIVE.read_bytes()} if archive else {}),
     }
+
+
+def typeset(spec: str) -> dict[str, str]:
+    """*spec* as mathspec typesets it: ``{'markdown': text}``, its math in LaTeX, or ``{'refused': message}``."""
+    try:
+        return {'markdown': to_markdown(spec)}
+    except Exception as refused:  # noqa: BLE001 — the preview shows any refusal beside the editor
+        return {'refused': ''.join(traceback.format_exception_only(refused)).strip()}
