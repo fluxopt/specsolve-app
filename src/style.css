@@ -18,8 +18,8 @@
   --ts-chart-focus-fill: var(--surface);
   /* The model editor's colours, chosen for the editor alone: at least 4.8:1 on its highlighted line, and apart under every common colour-vision deficiency. */
   --code-choice: #bd3605;
-  --code-data: #037182;
-  --code-set: #813ee0;
+  --code-data: #813ee0;
+  --code-set: #037182;
   --code-word: #5f5f5a;
   --code-prose: #5f5f5a;
   --code-error: #d03b3b;
@@ -41,8 +41,8 @@
     --hue-yellow: #c98500;
     --hue-red: #e05555;
     --code-choice: #f2946a;
-    --code-data: #11d8ce;
-    --code-set: #b48af2;
+    --code-data: #b48af2;
+    --code-set: #11d8ce;
     --code-word: #a3a39e;
     --code-prose: #a8a8a2;
     --code-error: #e05555;
