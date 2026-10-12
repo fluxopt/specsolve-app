@@ -1,12 +1,14 @@
-import { StrictMode, useEffect, useState } from 'react'
+import { lazy, StrictMode, Suspense, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { Dispatch } from './Dispatch'
 import { Explore } from './Explore'
 import { Risk } from './Risk'
-import { Solve } from './Solve'
 import './style.css'
 import { WhatIf } from './WhatIf'
+
+/** The solve page and its editor load when it is first opened, so the other pages do not download them. */
+const Solve = lazy(() => import('./Solve').then((m) => ({ default: m.Solve })))
 
 /** The pages, by the hash that selects them. Pages serves one file, so the route lives after the `#`. */
 const PAGES = {
@@ -52,7 +54,9 @@ function App() {
         </span>
       </nav>
       <main>
-        <Page />
+        <Suspense fallback={<p className="muted">Loading the page…</p>}>
+          <Page />
+        </Suspense>
       </main>
       <footer className="muted">
         Built with React, <a href="https://github.com/TanStack/charts">TanStack Charts</a> and{' '}
