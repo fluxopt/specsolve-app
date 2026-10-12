@@ -3,8 +3,8 @@ import { loadPyodide, type PyodideAPI, version } from 'pyodide'
 import solvePy from './solve.py?raw'
 import type { Answer, Question, Reply } from './solver'
 
-/** The newest specsolve whose polars requirement this Pyodide's polars meets; 0.7 asks for polars 2. */
-const SPECSOLVE = 'specsolve==0.6.2'
+/** The first specsolve that runs on Pyodide's polars, 1.33.1, and takes an archive's axis as the data it holds. */
+const SPECSOLVE = 'specsolve>=0.9,<0.10'
 
 let python: Promise<PyodideAPI> | null = null
 

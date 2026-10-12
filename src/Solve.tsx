@@ -260,7 +260,7 @@ function Compare({
                     <td>{d.condition}</td>
                     <td>{plain(d.objective)}</td>
                     <td>{then === undefined ? '—' : plain(then)}</td>
-                    <td>{then === undefined ? '—' : plain(d.objective - then)}</td>
+                    <td>{then === undefined ? '—' : plain(Math.round(d.objective - then) + 0)}</td>
                   </tr>
                 )
               })}

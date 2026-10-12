@@ -12,14 +12,13 @@ import traceback
 import polars as pl
 import specsolve as sps
 from mathspec import to_spec
-from specsolve.axes import axis_from
 
 #: The record columns the page reads, beside the sweep's key.
 RECORD = ['termination_condition', 'objective']
 
 
 def solve(spec: str, sources: dict[str, dict[str, list]], axis: str) -> dict[str, object] | str:
-    """Solve *spec* over *sources* once per slice of *axis*, the text of an archive's `axis.json`.
+    """Solve *spec* over *sources* once per slice of *axis*, the text of an archive's `axis.json`, carry included.
 
     Returns ``{'key': name, 'record': columns, 'primal': {variable: columns}}``,
     every table as ``{column: values}``, or, where the spec, the data or the
@@ -27,9 +26,8 @@ def solve(spec: str, sources: dict[str, dict[str, list]], axis: str) -> dict[str
     """
     try:
         declared = to_spec(spec)
-        manifest = json.loads(axis)
         tables = {name: pl.DataFrame(columns, strict=False) for name, columns in sources.items()}
-        sweep = sps.solve_over(declared, tables, axis_from(manifest), carry=manifest.get('carry', {}))
+        sweep = sps.solve_over(declared, tables, json.loads(axis))
     except Exception as refused:  # noqa: BLE001 — the page shows any refusal to the person who edited the spec
         return ''.join(traceback.format_exception_only(refused)).strip()
     return {

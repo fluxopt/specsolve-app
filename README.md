@@ -73,16 +73,16 @@ solves the pathway with specsolve and HiGHS in a Web Worker
 installs specsolve from PyPI, and runs [`src/solve.py`](src/solve.py). The page
 puts what comes back beside the published answer.
 
-Two limits of Pyodide's polars decide the shape of this:
-
-- **It is polars 1.** specsolve 0.7 and later require polars 2, so the worker
-  pins specsolve 0.6.2, the release the showcase's archives were solved with.
-- **It reads and writes no parquet.** The page reads the sources with hyparquet
-  and passes them to Python as columns, and the worker solves without
-  `archive=` and returns the record and every variable's values as columns.
+Pyodide's polars is 1.33.1, the newest polars that builds for the browser, and
+it reads and writes no parquet. specsolve 0.9 runs on that polars, so the
+worker installs it, and refuses by name any call that needs parquet. So the
+page reads the sources with hyparquet and passes them to Python as columns, and
+the worker solves without `archive=` and returns the record and every
+variable's values as columns. The archive's `axis.json` goes to `solve_over` as
+it is, carry included.
 
 The first solve downloads about 38 MB of Python and packages. After two solves
-the tab holds about 770 MB, so a desktop browser is fine and a phone may
+the tab holds about 780 MB, so a desktop browser is fine and a phone may
 reload the page.
 
 ## Run it
