@@ -28,7 +28,24 @@ import { SEQUENTIAL, technologyColors } from './palette'
 const svgAnimation = { duration: 320, easing: 'ease-in-out' as const }
 const year = (d: number) => String(d)
 
-export function FleetChart({ fleet, technologies }: { fleet: Standing[]; technologies: string[] }) {
+/** The years and the top of the capacity axis, fixed so that two fleet charts read on one scale. */
+export interface FleetFrame {
+  years: number[]
+  ceiling: number
+}
+
+/** The frame that holds every fleet in *fleets*: the years any of them stands in, and the tallest stack of any. */
+export function fleetFrame(...fleets: Standing[][]): FleetFrame {
+  const stacks = new Map<string, number>()
+  for (const [i, fleet] of fleets.entries())
+    for (const d of fleet) stacks.set(`${i}|${d.year}`, (stacks.get(`${i}|${d.year}`) ?? 0) + Math.max(d.value, 0))
+  return {
+    years: [...new Set(fleets.flat().map((d) => d.year))].sort((a, b) => a - b),
+    ceiling: Math.max(0, ...stacks.values()),
+  }
+}
+
+export function FleetChart({ fleet, technologies, frame }: { fleet: Standing[]; technologies: string[]; frame?: FleetFrame }) {
   const definition = useMemo(
     () =>
       defineChart({
@@ -45,8 +62,16 @@ export function FleetChart({ fleet, technologies }: { fleet: Standing[]; technol
           ruleY([0], { strokeOpacity: 0.6 }),
         ],
         scales: {
-          x: { scale: () => scaleBand<number>().padding(0.3), axis: { ticks: { format: year } } },
-          y: { scale: scaleLinear, nice: true, grid: true, axis: { label: 'MW', ticks: { format: compact } } },
+          x: {
+            scale: frame ? scaleBand<number>().domain(frame.years).padding(0.3) : () => scaleBand<number>().padding(0.3),
+            axis: { ticks: { format: year } },
+          },
+          y: {
+            scale: frame ? scaleLinear().domain([0, frame.ceiling]) : scaleLinear,
+            nice: true,
+            grid: true,
+            axis: { label: 'MW', ticks: { format: compact } },
+          },
         },
         color: {
           scale: scaleOrdinal<string, string>().domain(technologies).range(technologyColors(technologies)),
@@ -56,7 +81,7 @@ export function FleetChart({ fleet, technologies }: { fleet: Standing[]; technol
         tooltip,
         svgAnimation,
       }),
-    [fleet, technologies],
+    [fleet, technologies, frame],
   )
   return <Chart definition={definition} height={300} ariaLabel="Standing capacity by period, MW, by technology" />
 }

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { read } from './archive'
-import { FleetChart } from './charts'
+import { FleetChart, fleetFrame } from './charts'
 import { DataEditor, editedCells } from './DataEditor'
 import { compact, plain } from './format'
 import type { Standing } from './grid'
@@ -239,6 +239,7 @@ function Compare({
   const optimal = local.periods.filter((d) => d.condition === 'optimal').length
   const technologies = [...new Set([...reference.fleet, ...local.fleet].map((d) => d.generator))].sort()
   const published = new Map(reference.periods.map((d) => [d.year, d.objective]))
+  const frame = useMemo(() => fleetFrame(local.fleet, reference.fleet), [local.fleet, reference.fleet])
   return (
     <>
       <div className="grid four">
@@ -250,13 +251,13 @@ function Compare({
       <div className="grid two">
         <div className="card">
           <h2>Solved here{edited ? ', with your edits' : ''}</h2>
-          <p className="muted">Standing capacity by period, as specsolve returned it in this tab.</p>
-          {local.fleet.length > 0 ? <FleetChart fleet={local.fleet} technologies={technologies} /> : <p>The model no longer names a variable called <code>total</code>.</p>}
+          <p className="muted">Standing capacity by period, as specsolve returned it in this tab, on the same axes as the published one.</p>
+          {local.fleet.length > 0 ? <FleetChart fleet={local.fleet} technologies={technologies} frame={frame} /> : <p>The model no longer names a variable called <code>total</code>.</p>}
         </div>
         <div className="card">
           <h2>Published</h2>
           <p className="muted">The same, from the archive the showcase's solve job wrote.</p>
-          <FleetChart fleet={reference.fleet} technologies={technologies} />
+          <FleetChart fleet={reference.fleet} technologies={technologies} frame={frame} />
         </div>
       </div>
       <div className="card">
