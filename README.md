@@ -3,7 +3,7 @@
 An example client of [specsolve](https://github.com/fluxopt/specsolve) archives:
 a static React app, with charts by [TanStack Charts](https://github.com/TanStack/charts),
 that reads the archives the [specsolve showcase](https://github.com/fluxopt/specsolve-showcase)
-publishes and solves nothing itself.
+publishes, and on one page solves the showcase's model again in the browser.
 
 **Live:** <https://fluxopt.github.io/specsolve-app/>
 
@@ -15,8 +15,9 @@ specsolve-showcase                                      specsolve-app
 
 The showcase's own site is one client of those archives. This app is another,
 built with a different stack, to make the point the showcase makes: **the
-contract is the archive directory, not a library.** Nothing here imports
-specsolve, and nothing here is shared with the showcase except the URL.
+contract is the archive directory, not a library.** No page that reads an
+answer imports specsolve, and nothing here is shared with the showcase except
+the URL.
 
 ## What it reads
 
@@ -58,6 +59,34 @@ TypeScript:
   [TanStack Table](https://github.com/TanStack/table) to filter, sort and
   group, with the URL of the file it read and the one line that reads it
   from DuckDB or polars.
+
+## Solving in the tab
+
+**Solve** ([`src/Solve.tsx`](src/Solve.tsx)) asks a scenario's question again.
+It reads the scenario's own inputs out of its published archive (`spec.yaml`,
+`axis.json` and every `sources/<name>.parquet`), shows every parameter in a
+table whose values you can type over or scale a filtered set of rows at once
+([`src/DataEditor.tsx`](src/DataEditor.tsx)), shows the spec in an editor, and
+solves the pathway with specsolve and HiGHS in a Web Worker
+([`src/solver.worker.ts`](src/solver.worker.ts)). The worker loads
+[Pyodide](https://pyodide.org) from its CDN at the version `package.json` pins,
+installs specsolve from PyPI, and runs [`src/solve.py`](src/solve.py). The page
+puts what comes back beside the published answer.
+
+Pyodide's polars is 1.33.1, the newest polars that builds for the browser, and
+it reads and writes no parquet. specsolve 0.9 runs on that polars. So the page
+reads the sources with hyparquet and passes them to Python as columns, the
+worker passes the archive's `axis.json` to `solve_over` as it is, carry
+included, and the answer comes back as columns.
+
+**Solve and download the archive** saves the run as a specsolve archive, a zip
+that `sps.load_archive` and DuckDB read. specsolve writes it through pyarrow
+where polars has no parquet, so the worker loads pyarrow the first time it is
+asked for one, about 15 MB more.
+
+The first solve downloads about 38 MB of Python and packages. After two solves
+the tab holds about 780 MB, and about 1.1 GB once pyarrow is loaded, so a
+desktop browser is fine and a phone may reload the page.
 
 ## Run it
 

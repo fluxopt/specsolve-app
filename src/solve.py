@@ -1,0 +1,45 @@
+"""Ask a published sweep's question again, in the browser.
+
+The worker writes this module into Pyodide and calls `solve`. Pyodide's polars
+reads and writes no parquet, so the page reads the archive's sources and hands
+them over as columns, and the answer comes back as columns. Where the page asks
+for an archive too, the worker has loaded pyarrow, which specsolve writes the
+archive through.
+"""
+
+import json
+import traceback
+from pathlib import Path
+
+import polars as pl
+import specsolve as sps
+from mathspec import to_spec
+
+#: The record columns the page reads, beside the sweep's key.
+RECORD = ['termination_condition', 'objective']
+
+#: Where an archive asked for is written; specsolve refuses a target that exists, so each solve removes it first.
+ARCHIVE = Path('/tmp/run.zip')
+
+
+def solve(spec: str, sources: dict[str, dict[str, list]], axis: str, archive: bool) -> dict[str, object] | str:
+    """Solve *spec* over *sources* once per slice of *axis*, the text of an archive's `axis.json`, carry included.
+
+    Returns ``{'key': name, 'record': columns, 'primal': {variable: columns}}``,
+    every table as ``{column: values}``, and with *archive* also ``'archive'``,
+    the bytes of the run's archive as a zip. Where the spec, the data or the
+    solve is refused, returns the exception as Python prints it.
+    """
+    try:
+        declared = to_spec(spec)
+        tables = {name: pl.DataFrame(columns, strict=False) for name, columns in sources.items()}
+        ARCHIVE.unlink(missing_ok=True)
+        sweep = sps.solve_over(declared, tables, json.loads(axis), archive=ARCHIVE if archive else None)
+    except Exception as refused:  # noqa: BLE001 — the page shows any refusal to the person who edited the spec
+        return ''.join(traceback.format_exception_only(refused)).strip()
+    return {
+        'key': sweep.key_name,
+        'record': sweep.record.select(sweep.key_name, *RECORD).to_dict(as_series=False),
+        'primal': {name: sweep.primal(name).to_dict(as_series=False) for name in declared.variables},
+        **({'archive': ARCHIVE.read_bytes()} if archive else {}),
+    }

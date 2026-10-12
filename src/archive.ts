@@ -41,5 +41,10 @@ async function fetchRows(url: string, columns: string[]): Promise<{ rows: unknow
   const response = await fetch(url)
   if (!response.ok) throw new Error(`${url} answered ${response.status}`)
   const file = await response.arrayBuffer()
-  return { rows: await parquetReadObjects({ file, columns, compressors }), bytes: file.byteLength }
+  return { rows: await rowsOf(file, columns), bytes: file.byteLength }
+}
+
+/** The rows of one parquet file already in memory, *columns* only or every column, read as `read` reads a published one. */
+export function rowsOf(file: ArrayBuffer, columns?: string[]): Promise<unknown[]> {
+  return parquetReadObjects({ file, columns, compressors })
 }
