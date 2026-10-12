@@ -206,11 +206,9 @@ button.action {
 button.action:disabled { opacity: 0.6; cursor: progress; }
 button.link { font: inherit; font-size: 0.85rem; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; }
 .segmented button:disabled { cursor: default; }
-textarea.spec {
-  display: block; width: 100%; margin-top: 0.5rem; resize: vertical; tab-size: 2;
-  font: 0.82rem/1.45 ui-monospace, 'SF Mono', Menlo, monospace; color: var(--ink); background: var(--page);
-  border: 1px solid var(--rule); border-radius: 6px; padding: 0.6rem 0.75rem;
-}
+.spec-editor { margin-top: 0.5rem; }
+.spec-editor .cm-diagnosticText, .cm-schema-hover { white-space: pre-wrap; }
+.cm-schema-hover { max-width: 32rem; }
 table.periods tbody tr { cursor: default; }
 .card.refused { border-color: var(--hue-red); }
 .card.refused pre { margin: 0.5rem 0 0; white-space: pre-wrap; font-size: 0.82rem; color: var(--hue-red); }

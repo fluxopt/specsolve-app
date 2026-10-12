@@ -67,7 +67,9 @@ It reads the scenario's own inputs out of its published archive (`spec.yaml`,
 `axis.json` and every `sources/<name>.parquet` its `catalog.parquet` lists),
 shows every parameter in a table whose values you can type over or scale a
 filtered set of rows at once ([`src/DataEditor.tsx`](src/DataEditor.tsx)),
-shows the spec in an editor, and
+shows the spec in a code editor ([`src/SpecEditor.tsx`](src/SpecEditor.tsx))
+that completes, explains and checks it against mathspec's own schema
+([`src/specSchema.ts`](src/specSchema.ts)) as you type, and
 solves the pathway with specsolve and HiGHS in a Web Worker
 ([`src/solver.worker.ts`](src/solver.worker.ts)). The worker loads
 [Pyodide](https://pyodide.org) from its CDN at the version `package.json` pins,
@@ -88,6 +90,10 @@ asked for one, about 15 MB more.
 The first solve downloads about 38 MB of Python and packages. After two solves
 the tab holds about 780 MB, and about 1.1 GB once pyarrow is loaded, so a
 desktop browser is fine and a phone may reload the page.
+
+`src/mathspec.schema.json` is mathspec's `schema/mathspec.schema.json` at
+`v0.2.1`, the mathspec the worker installs. A specsolve that requires a newer
+mathspec takes the schema from that tag.
 
 ## Run it
 

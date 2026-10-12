@@ -6,6 +6,7 @@ import { DataEditor, editedCells } from './DataEditor'
 import { compact, plain } from './format'
 import type { Standing } from './grid'
 import { type Answer, type Columns, loadQuestion, type Question, rowsFrom, solve } from './solver'
+import { SpecEditor } from './SpecEditor'
 import { Tile } from './Tile'
 
 /** What one solve of the pathway came to, read off an archive whether it was published or written in this tab. */
@@ -201,15 +202,11 @@ function Page({ published }: { published: Map<string, Outcome> }) {
           <code>spec.yaml</code> of <code>runs/{scenario}</code>: one investment period, which the archive's axis runs once per
           year, each year inheriting the fleet the last one left.
         </p>
-        <textarea
-          className="spec"
-          aria-label="The model, in YAML"
-          spellCheck={false}
-          wrap="off"
+        <SpecEditor
           value={question ? spec : 'Reading the archive…'}
-          onChange={(e) => setSpec(e.target.value)}
+          onChange={setSpec}
           readOnly={!question || busy}
-          rows={28}
+          refused={run.state === 'refused' ? run.message : null}
         />
       </div>
     </>
