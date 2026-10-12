@@ -54,6 +54,14 @@ function localOutcome(answer: Answer): Outcome {
   return outcome(record as RecordRow[], total as TotalRow[])
 }
 
+/** Hand *bytes* to the browser as a file called *name*. */
+function download(bytes: Uint8Array, name: string) {
+  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/zip' }))
+  const link = Object.assign(document.createElement('a'), { href: url, download: name })
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 export function Solve() {
   const [published, setPublished] = useState<Map<string, Outcome> | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -104,13 +112,14 @@ function Page({ published }: { published: Map<string, Outcome> }) {
     [],
   )
 
-  const go = async () => {
+  const go = async (archive: boolean) => {
     if (!question) return
     const started = performance.now()
     setRun({ state: 'running', stage: 'Starting', started })
     try {
-      const answer = await solve({ ...question, spec, sources }, (stage) => setRun({ state: 'running', stage, started }))
+      const answer = await solve({ ...question, spec, sources, archive }, (stage) => setRun({ state: 'running', stage, started }))
       if ('refused' in answer) return setRun({ state: 'refused', message: answer.refused })
+      if (answer.archive) download(answer.archive, `${scenario}${edited ? '-edited' : ''}.zip`)
       const local = localOutcome(answer)
       setRun({ state: 'done', local, seconds: answer.seconds, waited: (performance.now() - started) / 1000, edited })
     } catch (e) {
@@ -145,8 +154,16 @@ function Page({ published }: { published: Map<string, Outcome> }) {
           ))}
         </div>
         <div className="solve-actions">
-          <button className="action" onClick={go} disabled={!question || busy}>
+          <button className="action" onClick={() => go(false)} disabled={!question || busy}>
             {busy ? `${run.stage}…` : 'Solve in this tab'}
+          </button>
+          <button
+            className="link"
+            onClick={() => go(true)}
+            disabled={!question || busy}
+            title="Solves again and saves the run as a specsolve archive. The first one loads pyarrow, about 15 MB."
+          >
+            Solve and download the archive
           </button>
           {question && edited && (
             <button

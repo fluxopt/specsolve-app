@@ -28,12 +28,16 @@ async function ready(): Promise<PyodideAPI> {
   return pyodide
 }
 
-async function answer({ spec, sources, axis }: Question): Promise<Reply> {
+async function answer({ spec, sources, axis, archive }: Question): Promise<Reply> {
   python ??= ready()
   const pyodide = await python
+  if (archive) {
+    say('Loading pyarrow')
+    await pyodide.loadPackage('pyarrow')
+  }
   say('Solving')
   const started = performance.now()
-  const result = pyodide.pyimport('solve').solve(spec, pyodide.toPy(sources), axis)
+  const result = pyodide.pyimport('solve').solve(spec, pyodide.toPy(sources), axis, archive)
   const seconds = (performance.now() - started) / 1000
   if (typeof result === 'string') return { kind: 'refused', message: result }
   const answered = result.toJs({ dict_converter: Object.fromEntries }) as Omit<Answer, 'seconds'>

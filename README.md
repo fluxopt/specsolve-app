@@ -74,15 +74,18 @@ installs specsolve from PyPI, and runs [`src/solve.py`](src/solve.py). The page
 puts what comes back beside the published answer.
 
 Pyodide's polars is 1.33.1, the newest polars that builds for the browser, and
-it reads and writes no parquet. specsolve 0.9 runs on that polars, so the
-worker installs it, and refuses by name any call that needs parquet. So the
-page reads the sources with hyparquet and passes them to Python as columns, and
-the worker solves without `archive=` and returns the record and every
-variable's values as columns. The archive's `axis.json` goes to `solve_over` as
-it is, carry included.
+it reads and writes no parquet. specsolve 0.9 runs on that polars. So the page
+reads the sources with hyparquet and passes them to Python as columns, the
+worker passes the archive's `axis.json` to `solve_over` as it is, carry
+included, and the answer comes back as columns.
+
+**Solve and download the archive** saves the run as a specsolve archive, a zip
+that `sps.load_archive` and DuckDB read. specsolve writes it through pyarrow
+where polars has no parquet, so the worker loads pyarrow the first time it is
+asked for one, about 15 MB more.
 
 The first solve downloads about 38 MB of Python and packages. After two solves
-the tab holds about 780 MB, so a desktop browser is fine and a phone may
+the tab holds about 780 MB, and about 1.1 GB once pyarrow is loaded, so a desktop browser is fine and a phone may
 reload the page.
 
 ## Run it

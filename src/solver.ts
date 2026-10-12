@@ -3,22 +3,30 @@ import { ARCHIVE, rowsOf } from './archive'
 /** A table as `{column: values}`, the shape it crosses into Python and back. */
 export type Columns = Record<string, unknown[]>
 
-/** What a sweep's archive holds as its inputs: the spec, every source by name, and the text of `axis.json`. */
+/**
+ * What a sweep's archive holds as its inputs: the spec, every source by name, and the text of `axis.json`.
+ *
+ * With `archive`, the solve also writes the run as a specsolve archive, which
+ * loads pyarrow into the worker the first time it is asked for.
+ */
 export interface Question {
   spec: string
   sources: Record<string, Columns>
   axis: string
+  archive: boolean
 }
 
 /**
  * What a solve in the tab came to: the sweep's key column, its record, every variable's values, and the time it took.
  *
- * The record holds the key, `termination_condition` and `objective`, one row per slice.
+ * The record holds the key, `termination_condition` and `objective`, one row per slice. `archive` is the run as
+ * a zip, where the question asked for it.
  */
 export interface Answer {
   key: string
   record: Columns
   primal: Record<string, Columns>
+  archive?: Uint8Array
   seconds: number
 }
 
@@ -74,7 +82,7 @@ export async function loadQuestion(archive: string): Promise<Question> {
     fetchFile(archive, 'axis.json').then((r) => r.text()),
     Promise.all(names.map((d) => fetchFile(archive, `sources/${d.source}.parquet`).then(async (r) => rowsOf(await r.arrayBuffer())))),
   ])
-  return { spec, axis, sources: Object.fromEntries(names.map((d, i) => [d.source, columnsOf(tables[i] as Record<string, unknown>[])])) }
+  return { spec, axis, archive: false, sources: Object.fromEntries(names.map((d, i) => [d.source, columnsOf(tables[i] as Record<string, unknown>[])])) }
 }
 
 function columnsOf(rows: Record<string, unknown>[]): Columns {
