@@ -85,8 +85,8 @@ where polars has no parquet, so the worker loads pyarrow the first time it is
 asked for one, about 15 MB more.
 
 The first solve downloads about 38 MB of Python and packages. After two solves
-the tab holds about 780 MB, and about 1.1 GB once pyarrow is loaded, so a desktop browser is fine and a phone may
-reload the page.
+the tab holds about 780 MB, and about 1.1 GB once pyarrow is loaded, so a
+desktop browser is fine and a phone may reload the page.
 
 ## Run it
 
