@@ -1,7 +1,7 @@
 import { loadPyodide, type PyodideAPI, version } from 'pyodide'
 
 import solvePy from './solve.py?raw'
-import type { Answer, Question, Reply } from './solver'
+import type { Answer, Ask, Question, Reply } from './solver'
 
 /** The first specsolve that runs on Pyodide's polars, 1.33.1, and takes an archive's axis as the data it holds. */
 const SPECSOLVE = 'specsolve>=0.9,<0.10'
@@ -29,8 +29,7 @@ async function ready(): Promise<PyodideAPI> {
 }
 
 async function answer({ spec, sources, axis, archive }: Question): Promise<Reply> {
-  python ??= ready()
-  const pyodide = await python
+  const pyodide = await (python ??= ready())
   if (archive) {
     say('Loading pyarrow')
     await pyodide.loadPackage('pyarrow')
@@ -45,9 +44,17 @@ async function answer({ spec, sources, axis, archive }: Question): Promise<Reply
   return { kind: 'answer', answer: { ...answered, seconds } }
 }
 
-onmessage = async (event: MessageEvent<Question>) => {
+async function typeset(spec: string): Promise<Reply> {
+  const pyodide = await (python ??= ready())
+  const result = pyodide.pyimport('solve').typeset(spec)
+  const typeset = result.toJs({ dict_converter: Object.fromEntries }) as { markdown?: string; refused?: string }
+  result.destroy()
+  return typeset.markdown === undefined ? { kind: 'refused', message: typeset.refused! } : { kind: 'typeset', markdown: typeset.markdown }
+}
+
+onmessage = async ({ data }: MessageEvent<Ask>) => {
   try {
-    postMessage(await answer(event.data))
+    postMessage(await (data.kind === 'solve' ? answer(data.question) : typeset(data.spec)))
   } catch (e) {
     python = null
     postMessage({ kind: 'failed', message: e instanceof Error ? e.message : String(e) } satisfies Reply)

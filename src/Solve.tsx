@@ -6,6 +6,7 @@ import { DataEditor, editedCells } from './DataEditor'
 import { compact, plain } from './format'
 import type { Standing } from './grid'
 import { type Answer, type Columns, loadQuestion, type Question, rowsFrom, solve } from './solver'
+import { MathPreview } from './MathPreview'
 import { SpecEditor } from './SpecEditor'
 import { Tile } from './Tile'
 
@@ -88,6 +89,8 @@ function Page({ published }: { published: Map<string, Outcome> }) {
   const [spec, setSpec] = useState('')
   const [sources, setSources] = useState<Record<string, Columns>>({})
   const [run, setRun] = useState<Run>({ state: 'idle' })
+  const [pythonReady, setPythonReady] = useState(false)
+  const markReady = useCallback(() => setPythonReady(true), [])
 
   useEffect(() => {
     let current = true
@@ -119,6 +122,7 @@ function Page({ published }: { published: Map<string, Outcome> }) {
     setRun({ state: 'running', stage: 'Starting', started })
     try {
       const answer = await solve({ ...question, spec, sources, archive }, (stage) => setRun({ state: 'running', stage, started }))
+      markReady()
       if ('refused' in answer) return setRun({ state: 'refused', message: answer.refused })
       if (answer.archive) download(answer.archive, `${scenario}${edited ? '-edited' : ''}.zip`)
       const local = localOutcome(answer)
@@ -202,12 +206,15 @@ function Page({ published }: { published: Map<string, Outcome> }) {
           <code>spec.yaml</code> of <code>runs/{scenario}</code>: one investment period, which the archive's axis runs once per
           year, each year inheriting the fleet the last one left.
         </p>
-        <SpecEditor
-          value={question ? spec : 'Reading the archive…'}
-          onChange={setSpec}
-          readOnly={!question || busy}
-          refused={run.state === 'refused' ? run.message : null}
-        />
+        <div className="model-panes">
+          <SpecEditor
+            value={question ? spec : 'Reading the archive…'}
+            onChange={setSpec}
+            readOnly={!question || busy}
+            refused={run.state === 'refused' ? run.message : null}
+          />
+          {question && <MathPreview spec={spec} pythonReady={pythonReady} onPythonReady={markReady} />}
+        </div>
       </div>
     </>
   )
