@@ -16,6 +16,13 @@
   --ts-chart-tooltip-color: var(--ink);
   --ts-chart-tooltip-border: 1px solid var(--rule);
   --ts-chart-focus-fill: var(--surface);
+  /* The model editor's text colours: each at least 5:1 against --page, which the palette's hues are not. */
+  --code-choice: #b4441b;
+  --code-data: #0d7553;
+  --code-set: #1f5fb3;
+  --code-literal: #8a5800;
+  --code-word: #5f5f5a;
+  --code-prose: #5f5f5a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,6 +40,12 @@
     --hue-aqua: #199e70;
     --hue-yellow: #c98500;
     --hue-red: #e05555;
+    --code-choice: #f2946a;
+    --code-data: #3fd09c;
+    --code-set: #79b2f5;
+    --code-literal: #e2b350;
+    --code-word: #a3a39e;
+    --code-prose: #a8a8a2;
   }
 }
 

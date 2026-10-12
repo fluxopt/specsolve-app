@@ -69,7 +69,9 @@ shows every parameter in a table whose values you can type over or scale a
 filtered set of rows at once ([`src/DataEditor.tsx`](src/DataEditor.tsx)),
 shows the spec in a code editor ([`src/SpecEditor.tsx`](src/SpecEditor.tsx))
 that completes, explains and checks it against mathspec's own schema
-([`src/specSchema.ts`](src/specSchema.ts)) as you type, with the model as
+([`src/specSchema.ts`](src/specSchema.ts)) as you type and colours each name
+in an expression by what the file declares it as
+([`src/specHighlight.ts`](src/specHighlight.ts)), with the model as
 math beside it ([`src/MathPreview.tsx`](src/MathPreview.tsx)), and
 solves the pathway with specsolve and HiGHS in a Web Worker
 ([`src/solver.worker.ts`](src/solver.worker.ts)). The worker loads

@@ -10,6 +10,7 @@ import { tags } from '@lezer/highlight'
 import { yaml } from '@codemirror/lang-yaml'
 import { parseDocument } from 'yaml'
 
+import { specHighlight } from './specHighlight'
 import { completeFromSchema, hoverFromSchema, rangeAt, schemaDiagnostics } from './specSchema'
 
 /** Colours from the stylesheet's own variables, so the editor follows light and dark mode with the page. */
@@ -28,15 +29,22 @@ const theme = EditorView.theme({
   '.cm-tooltip-hover, .cm-tooltip-lint': { padding: '0.4rem 0.6rem', fontSize: '0.8rem', lineHeight: '1.45' },
   '.cm-tooltip-autocomplete > ul > li[aria-selected]': { backgroundColor: 'var(--accent)', color: '#fff' },
   '.cm-foldPlaceholder': { backgroundColor: 'var(--surface)', border: '1px solid var(--rule)', color: 'var(--muted)' },
+  '.cm-ms-choice': { color: 'var(--code-choice)', fontStyle: 'italic' },
+  '.cm-ms-data': { color: 'var(--code-data)' },
+  '.cm-ms-set': { color: 'var(--code-set)' },
+  '.cm-ms-constraint': { color: 'var(--ink)', fontWeight: '600' },
+  '.cm-ms-word': { color: 'var(--code-word)', fontWeight: '600' },
+  '.cm-ms-operator': { color: 'var(--code-word)' },
+  '.cm-ms-literal': { color: 'var(--code-literal)' },
+  '.cm-ms-prose': { color: 'var(--code-prose)' },
+  '.cm-ms-unknown': { textDecoration: 'underline wavy var(--hue-red) 1px', textUnderlineOffset: '3px' },
 })
 
+/** What YAML's own grammar can tell apart; `specHighlight` colours the values by what they mean. */
 const highlight = HighlightStyle.define([
-  { tag: [tags.propertyName, tags.definition(tags.propertyName)], color: 'var(--hue-blue)', fontWeight: '600' },
-  { tag: [tags.string, tags.special(tags.string)], color: 'var(--ink)' },
-  { tag: [tags.number, tags.integer, tags.float], color: 'var(--hue-orange)' },
-  { tag: [tags.bool, tags.null, tags.atom, tags.keyword], color: 'var(--hue-aqua)' },
-  { tag: [tags.comment, tags.lineComment], color: 'var(--muted)', fontStyle: 'italic' },
-  { tag: [tags.punctuation, tags.separator, tags.squareBracket, tags.brace, tags.meta], color: 'var(--muted)' },
+  { tag: [tags.propertyName, tags.definition(tags.propertyName)], color: 'var(--ink)', fontWeight: '600' },
+  { tag: [tags.comment, tags.lineComment], color: 'var(--code-prose)', fontStyle: 'italic' },
+  { tag: [tags.punctuation, tags.separator, tags.squareBracket, tags.brace, tags.meta], color: 'var(--code-word)' },
 ])
 
 const setRefusal = StateEffect.define<string | null>()
@@ -116,6 +124,7 @@ export function SpecEditor({
           }),
           hoverTooltip((v, pos) => hoverFromSchema(v.state.doc, pos)),
           syntaxHighlighting(highlight),
+          specHighlight,
           theme,
           editable.current.of(EditorState.readOnly.of(readOnly)),
           EditorView.contentAttributes.of({ 'aria-label': 'The model, in YAML' }),
