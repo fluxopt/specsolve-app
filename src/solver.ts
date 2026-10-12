@@ -70,19 +70,20 @@ export function solve(question: Question, onStage: (stage: string) => void): Pro
 /**
  * The inputs of one published sweep, such as `runs/base`: its spec, its sources as columns, and its axis.
  *
- * The sources are named by the archive's own `sources.parquet`, since a
- * static host cannot list a directory. The `specsolve_run` column every
- * archived file carries is left out, as specsolve leaves it out reading an
- * archive back.
+ * The sources are the `sources/<name>.parquet` paths the archive's own
+ * `catalog.parquet` lists, since a static host cannot list a directory. The
+ * `specsolve_run` column every archived file carries is left out, as
+ * specsolve leaves it out reading an archive back.
  */
 export async function loadQuestion(archive: string): Promise<Question> {
-  const names = (await rowsOf(await fetchFile(archive, 'sources.parquet').then((r) => r.arrayBuffer()), ['source'])) as { source: string }[]
+  const catalog = (await rowsOf(await fetchFile(archive, 'catalog.parquet').then((r) => r.arrayBuffer()), ['path'])) as { path: string }[]
+  const names = [...new Set(catalog.map((d) => d.path).filter((p) => p.startsWith('sources/')))].map((p) => p.slice('sources/'.length, -'.parquet'.length))
   const [spec, axis, tables] = await Promise.all([
     fetchFile(archive, 'spec.yaml').then((r) => r.text()),
     fetchFile(archive, 'axis.json').then((r) => r.text()),
-    Promise.all(names.map((d) => fetchFile(archive, `sources/${d.source}.parquet`).then(async (r) => rowsOf(await r.arrayBuffer())))),
+    Promise.all(names.map((name) => fetchFile(archive, `sources/${name}.parquet`).then(async (r) => rowsOf(await r.arrayBuffer())))),
   ])
-  return { spec, axis, archive: false, sources: Object.fromEntries(names.map((d, i) => [d.source, columnsOf(tables[i] as Record<string, unknown>[])])) }
+  return { spec, axis, archive: false, sources: Object.fromEntries(names.map((name, i) => [name, columnsOf(tables[i] as Record<string, unknown>[])])) }
 }
 
 function columnsOf(rows: Record<string, unknown>[]): Columns {

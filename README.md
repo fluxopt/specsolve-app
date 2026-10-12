@@ -64,7 +64,7 @@ TypeScript:
 
 **Solve** ([`src/Solve.tsx`](src/Solve.tsx)) asks a scenario's question again.
 It reads the scenario's own inputs out of its published archive (`spec.yaml`,
-`axis.json` and every `sources/<name>.parquet`), shows every parameter in a
+`axis.json` and every `sources/<name>.parquet` its `catalog.parquet` lists), shows every parameter in a
 table whose values you can type over or scale a filtered set of rows at once
 ([`src/DataEditor.tsx`](src/DataEditor.tsx)), shows the spec in an editor, and
 solves the pathway with specsolve and HiGHS in a Web Worker
