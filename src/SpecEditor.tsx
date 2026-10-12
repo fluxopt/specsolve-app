@@ -11,6 +11,7 @@ import { yaml } from '@codemirror/lang-yaml'
 import { parseDocument } from 'yaml'
 
 import { specHighlight } from './specHighlight'
+import { completeNames, hoverName } from './specNames'
 import { completeFromSchema, hoverFromSchema, rangeAt, schemaDiagnostics } from './specSchema'
 
 /** Colours from the stylesheet's own variables, so the editor follows light and dark mode with the page. */
@@ -111,7 +112,7 @@ export function SpecEditor({
           indentOnInput(),
           bracketMatching(),
           closeBrackets(),
-          autocompletion({ override: [completeFromSchema] }),
+          autocompletion({ override: [completeFromSchema, completeNames] }),
           highlightActiveLine(),
           highlightSelectionMatches(),
           EditorState.tabSize.of(2),
@@ -123,6 +124,7 @@ export function SpecEditor({
             needsRefresh: (update) => update.transactions.some((tr) => tr.effects.some((e) => e.is(setRefusal))),
           }),
           hoverTooltip((v, pos) => hoverFromSchema(v.state.doc, pos)),
+          hoverTooltip(hoverName),
           syntaxHighlighting(highlight),
           specHighlight,
           theme,
