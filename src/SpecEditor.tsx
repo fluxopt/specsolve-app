@@ -30,15 +30,6 @@ const theme = EditorView.theme({
   '.cm-tooltip-hover, .cm-tooltip-lint': { padding: '0.4rem 0.6rem', fontSize: '0.8rem', lineHeight: '1.45' },
   '.cm-tooltip-autocomplete > ul > li[aria-selected]': { backgroundColor: 'var(--accent)', color: '#fff' },
   '.cm-foldPlaceholder': { backgroundColor: 'var(--surface)', border: '1px solid var(--rule)', color: 'var(--muted)' },
-  '.cm-ms-choice': { color: 'var(--code-choice)', fontStyle: 'italic' },
-  '.cm-ms-data': { color: 'var(--code-data)' },
-  '.cm-ms-set': { color: 'var(--code-set)' },
-  '.cm-ms-constraint': { color: 'var(--ink)', fontWeight: '600' },
-  '.cm-ms-word': { color: 'var(--code-word)', fontWeight: '600' },
-  '.cm-ms-operator': { color: 'var(--code-word)' },
-  '.cm-ms-literal': { color: 'var(--code-literal)' },
-  '.cm-ms-prose': { color: 'var(--code-prose)' },
-  '.cm-ms-unknown': { textDecoration: 'underline wavy var(--hue-red) 1px', textUnderlineOffset: '3px' },
 })
 
 /** What YAML's own grammar can tell apart; `specHighlight` colours the values by what they mean. */
@@ -156,5 +147,22 @@ export function SpecEditor({
     forceLinting(v)
   }, [refused])
 
-  return <div ref={host} className="spec-editor" />
+  return (
+    <div className="spec-editor-wrap">
+      <div ref={host} className="spec-editor" />
+      <p className="spec-legend" aria-label="What the colours mean">
+        <span className="cm-ms-choice">variable</span>
+        <span className="cm-ms-data">parameter</span>
+        <span className="cm-ms-set">dimension</span>
+        <span className="cm-ms-constraint">constraint</span>
+        <span className="cm-ms-word" title="a built-in of the language">
+          sum()
+        </span>
+        <span className="cm-ms-literal" title="a number">
+          42
+        </span>
+        <span className="cm-ms-unknown">undeclared</span>
+      </p>
+    </div>
+  )
 }

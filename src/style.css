@@ -16,13 +16,13 @@
   --ts-chart-tooltip-color: var(--ink);
   --ts-chart-tooltip-border: 1px solid var(--rule);
   --ts-chart-focus-fill: var(--surface);
-  /* The model editor's text colours: each at least 5:1 against --page, which the palette's hues are not. */
-  --code-choice: #b4441b;
-  --code-data: #0d7553;
-  --code-set: #1f5fb3;
-  --code-literal: #8a5800;
+  /* The model editor's colours, chosen for the editor alone: at least 4.8:1 on its highlighted line, and apart under every common colour-vision deficiency. */
+  --code-choice: #bd3605;
+  --code-data: #037182;
+  --code-set: #813ee0;
   --code-word: #5f5f5a;
   --code-prose: #5f5f5a;
+  --code-error: #d03b3b;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -41,11 +41,11 @@
     --hue-yellow: #c98500;
     --hue-red: #e05555;
     --code-choice: #f2946a;
-    --code-data: #3fd09c;
-    --code-set: #79b2f5;
-    --code-literal: #e2b350;
+    --code-data: #11d8ce;
+    --code-set: #b48af2;
     --code-word: #a3a39e;
     --code-prose: #a8a8a2;
+    --code-error: #e05555;
   }
 }
 
@@ -220,6 +220,20 @@ button.action:disabled { opacity: 0.6; cursor: progress; }
 button.link { font: inherit; font-size: 0.85rem; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; }
 .segmented button:disabled { cursor: default; }
 .spec-editor { margin-top: 0.5rem; }
+/* What the model editor colours each name as, and the legend under it that says so. */
+.cm-ms-choice { color: var(--code-choice); font-style: italic; }
+.cm-ms-data { color: var(--code-data); }
+.cm-ms-set { color: var(--code-set); }
+.cm-ms-constraint { color: var(--ink); font-weight: 600; }
+.cm-ms-word { color: var(--code-word); font-weight: 600; }
+.cm-ms-operator { color: var(--code-word); }
+.cm-ms-literal { color: var(--code-data); }
+.cm-ms-prose { color: var(--code-prose); }
+.cm-ms-unknown { text-decoration: underline wavy var(--code-error) 1px; text-underline-offset: 3px; }
+.spec-legend {
+  display: flex; flex-wrap: wrap; gap: 0.2rem 0.75rem; margin: 0.4rem 0 0; font-size: 0.78rem; color: var(--muted);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
 .spec-editor .cm-diagnosticText, .cm-schema-hover { white-space: pre-wrap; }
 .cm-schema-hover { max-width: 32rem; }
 table.periods tbody tr { cursor: default; }
